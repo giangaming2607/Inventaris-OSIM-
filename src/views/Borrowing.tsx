@@ -15,12 +15,14 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
   const [peminjaman, setPeminjaman] = useState<Peminjaman[]>([]);
   const [inventaris, setInventaris] = useState<Inventaris[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [pengembalian, setPengembalian] = useState<any[]>([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedBarang, setSelectedBarang] = useState('');
   const [jumlah, setJumlah] = useState(1);
   const [tglKembali, setTglKembali] = useState('');
   const [catatan, setCatatan] = useState('');
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -29,6 +31,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
     setPeminjaman(db.peminjaman);
     setInventaris(db.inventaris);
     setUsers(db.users);
+    setPengembalian(db.pengembalian);
   };
 
   useEffect(() => { loadData(); }, []);
@@ -92,6 +95,15 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
     }
   };
 
+  const handleViewPhoto = (peminjaman_id: string) => {
+    const ret = pengembalian.find(r => r.peminjaman_id === peminjaman_id);
+    if (ret && ret.foto_pengembalian) {
+      setPhotoPreview(ret.foto_pengembalian);
+    } else {
+      alert('Foto pengembalian tidak ditemukan.');
+    }
+  };
+
   const filteredData = peminjaman.filter(p => {
     const b = inventaris.find(i => i.barang_id === p.barang_id);
     const u = users.find(u => u.user_id === p.user_id);
@@ -136,6 +148,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
                   <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500 text-center">Qty</th>
                   <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Jadwal</th>
                   <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Status</th>
+                  <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800">
@@ -166,12 +179,19 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
                         {getStatusBadge(p.status)}
                         {isLate && <div className="text-xs text-red-500 mt-1 font-medium">Terlambat!</div>}
                       </td>
+                      <td className="px-6 py-4 text-right">
+                        {p.status === 'Dikembalikan' && (
+                          <Button size="sm" variant="outline" onClick={() => handleViewPhoto(p.peminjaman_id)}>
+                            Lihat Foto
+                          </Button>
+                        )}
+                      </td>
                     </tr>
                   )
                 })}
                 {filteredData.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center text-neutral-500">
+                    <td colSpan={6} className="px-6 py-12 text-center text-neutral-500">
                       Tidak ada riwayat peminjaman.
                     </td>
                   </tr>
@@ -242,6 +262,23 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
             />
           </div>
         </div>
+      </Modal>
+
+      <Modal 
+        isOpen={!!photoPreview} 
+        onClose={() => setPhotoPreview(null)} 
+        title="Foto Bukti Pengembalian"
+        footer={
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setPhotoPreview(null)}>Tutup</Button>
+          </div>
+        }
+      >
+        {photoPreview && (
+          <div className="flex justify-center bg-black rounded-lg overflow-hidden border border-neutral-800 p-2">
+            <img src={photoPreview} alt="Bukti pengembalian" className="max-w-full max-h-[60vh] object-contain" />
+          </div>
+        )}
       </Modal>
     </div>
   );

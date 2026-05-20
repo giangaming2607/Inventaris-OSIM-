@@ -37,8 +37,8 @@ export function Login({ onLogin }: LoginProps) {
   };
 
   return (
-    <div className="flex h-screen items-center justify-center bg-[#050505] text-neutral-200">
-      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl p-8">
+    <div className="flex flex-col h-screen items-center justify-center bg-[#050505] text-neutral-200">
+      <div className="w-full max-w-md bg-neutral-900 border border-neutral-800 rounded-xl shadow-xl p-8 mb-8">
         <div className="mb-8 text-center">
           {logo && (
             <img src={logo} alt="Logo" className="h-24 object-contain mx-auto mb-4" />
@@ -86,6 +86,10 @@ export function Login({ onLogin }: LoginProps) {
             Masuk
           </button>
         </form>
+      </div>
+      
+      <div className="text-xs text-neutral-500 mt-auto mb-6 absolute bottom-0 text-center px-4">
+        &copy; {new Date().getFullYear()} OSIM MTs Madani Alauddin.<br className="sm:hidden" /> Dikembangkan oleh Gian Aditya.
       </div>
     </div>
   );
