@@ -50,6 +50,7 @@ export interface Pengembalian {
   tanggal_pengembalian: string;
   kondisi_setelah: KondisiBarang;
   catatan_kerusakan: string;
+  foto_pengembalian?: string;
 }
 
 export interface LogAktivitas {

@@ -4,12 +4,13 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
-import { Search, Undo2, AlertCircle } from 'lucide-react';
+import { Search, Undo2, AlertCircle, Camera } from 'lucide-react';
 import { getDB, setDB, addLog } from '../lib/storage';
 import { Inventaris, Peminjaman, Pengembalian, User, KondisiBarang } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { formatDate } from '../lib/utils';
 import { differenceInDays } from 'date-fns';
+import { useRef } from 'react';
 
 export function Returns({ currentUser }: { currentUser: User }) {
   const [peminjaman, setPeminjaman] = useState<Peminjaman[]>([]);
@@ -22,6 +23,8 @@ export function Returns({ currentUser }: { currentUser: User }) {
   
   const [kondisi, setKondisi] = useState<KondisiBarang>('Baik');
   const [catatan, setCatatan] = useState('');
+  const [foto, setFoto] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -40,7 +43,19 @@ export function Returns({ currentUser }: { currentUser: User }) {
     const b = inventaris.find(i => i.barang_id === p.barang_id);
     setKondisi(b?.kondisi || 'Baik');
     setCatatan('');
+    setFoto(null);
     setIsModalOpen(true);
+  };
+
+  const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFoto(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleReturn = () => {
@@ -61,7 +76,8 @@ export function Returns({ currentUser }: { currentUser: User }) {
       peminjaman_id: selectedPinjaman.peminjaman_id,
       tanggal_pengembalian: new Date().toISOString(),
       kondisi_setelah: kondisi,
-      catatan_kerusakan: catatan
+      catatan_kerusakan: catatan,
+      foto_pengembalian: foto || undefined
     };
     db.pengembalian.push(ret);
 
@@ -183,7 +199,9 @@ export function Returns({ currentUser }: { currentUser: User }) {
         footer={
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button variant="primary" onClick={handleReturn}>Konfirmasi Pengembalian</Button>
+            <Button variant="primary" onClick={handleReturn} disabled={!foto}>
+              Konfirmasi Pengembalian
+            </Button>
           </div>
         }
       >
@@ -225,6 +243,41 @@ export function Returns({ currentUser }: { currentUser: User }) {
                 value={catatan}
                 onChange={e => setCatatan(e.target.value)}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-neutral-300 mb-1">
+                Foto Bukti Pengembalian <span className="text-red-500">*</span>
+              </label>
+              <div 
+                onClick={() => fileInputRef.current?.click()}
+                className={`w-full h-32 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors overflow-hidden relative ${
+                  foto ? 'border-neutral-700 bg-black' : 'border-neutral-700 hover:border-neutral-500 bg-[#0A0A0A]'
+                }`}
+              >
+                {foto ? (
+                  <>
+                    <img src={foto} alt="Bukti Pengembalian" className="max-w-full max-h-full object-contain" />
+                    <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 flex items-center justify-center transition-opacity text-white text-sm font-medium">
+                      Ganti Foto
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <Camera className="w-8 h-8 text-neutral-500 mb-2" />
+                    <span className="text-sm text-neutral-500">Klik untuk upload foto</span>
+                  </>
+                )}
+              </div>
+              <input 
+                type="file" 
+                ref={fileInputRef} 
+                className="hidden" 
+                accept="image/*"
+                capture="environment"
+                onChange={handleFotoUpload}
+              />
+              {!foto && <p className="text-xs text-red-500 mt-2 font-medium">Foto pengembalian wajib diunggah.</p>}
             </div>
           </div>
         )}
