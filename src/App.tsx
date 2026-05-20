@@ -14,17 +14,39 @@ import { Settings } from './views/Settings';
 
 export default function App() {
   const [currentView, setCurrentView] = useState('dashboard');
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    if (typeof window !== 'undefined') {
+      const savedUser = localStorage.getItem('osim_current_user');
+      if (savedUser) {
+        try {
+          const u = JSON.parse(savedUser);
+          if (u) {
+            setCurrentUser(u);
+            return u;
+          }
+        } catch (e) {
+          console.error("Failed to parse saved session", e);
+        }
+      }
+    }
+    return null;
+  });
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   const handleLogin = (user: User) => {
     setUser(user);
     setCurrentUser(user);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('osim_current_user', JSON.stringify(user));
+    }
     setCurrentView('dashboard');
   };
 
   const handleLogout = () => {
     setUser(null);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('osim_current_user');
+    }
     setCurrentView('dashboard');
   };
 

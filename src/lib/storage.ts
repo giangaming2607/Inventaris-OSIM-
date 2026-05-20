@@ -78,8 +78,27 @@ const defaultData: DatabaseSchema = {
   }
 };
 
+const LOCAL_STORAGE_KEY = 'osim_inventory_db';
+
+const loadInitialDB = (): DatabaseSchema => {
+  if (typeof window !== 'undefined') {
+    const local = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (local) {
+      try {
+        const parsed = JSON.parse(local);
+        if (parsed && typeof parsed === 'object' && Array.isArray(parsed.users)) {
+          return parsed;
+        }
+      } catch (e) {
+        console.error("Failed to parse local storage key", e);
+      }
+    }
+  }
+  return defaultData;
+};
+
 // In-memory cache
-let cachedDB: DatabaseSchema = defaultData;
+let cachedDB: DatabaseSchema = loadInitialDB();
 let lastHash = "";
 
 // Helper to compute a simple hash string to check for differences
@@ -96,13 +115,19 @@ export async function syncFromServer() {
   try {
     const res = await fetch("/api/db");
     if (res.ok) {
-      const data: DatabaseSchema = await res.json();
-      const currentHash = computeHash(data);
-      if (currentHash !== lastHash) {
-        cachedDB = data;
-        lastHash = currentHash;
-        // Notify React components to trigger re-renders
-        window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
+        const data: DatabaseSchema = await res.json();
+        const currentHash = computeHash(data);
+        if (currentHash !== lastHash) {
+          cachedDB = data;
+          lastHash = currentHash;
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+            // Notify React components to trigger re-renders
+            window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
+          }
+        }
       }
     }
   } catch (error) {
@@ -127,7 +152,10 @@ export const getDB = (): DatabaseSchema => {
 export const setDB = (data: DatabaseSchema) => {
   cachedDB = data;
   lastHash = computeHash(data);
-  window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
+  }
 
   // Post changes asynchronously with retry/fail tolerance
   fetch("/api/db", {

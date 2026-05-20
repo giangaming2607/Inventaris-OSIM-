@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Role } from '../../types';
+import { useDB } from '../../lib/storage';
 
 interface SidebarProps {
   currentView: string;
@@ -12,6 +13,10 @@ interface SidebarProps {
 }
 
 export function Sidebar({ currentView, onNavigate, userRole }: SidebarProps) {
+  const db = useDB();
+  const logo = db.settings?.logo || null;
+  const loginTitle = db.settings?.login_title || 'Inventaris OSIM';
+
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Pengurus'] },
     { id: 'inventory', label: 'Inventaris', icon: Boxes, roles: ['Admin', 'Pengurus'] },
@@ -27,9 +32,13 @@ export function Sidebar({ currentView, onNavigate, userRole }: SidebarProps) {
 
   return (
     <aside className="w-64 bg-[#050505] border-r border-neutral-800 text-neutral-400 flex-shrink-0 flex flex-col transition-all duration-300">
-      <div className="h-16 flex items-center px-6 bg-[#050505] border-b border-neutral-800 font-bold text-white text-lg tracking-tight">
-        <Boxes className="w-6 h-6 mr-3 text-blue-500" />
-        Inventaris OSIM
+      <div className="h-16 flex items-center px-6 bg-[#050505] border-b border-neutral-800 font-bold text-white text-lg tracking-tight overflow-hidden">
+        {logo ? (
+          <img src={logo} alt="Logo" className="w-8 h-8 mr-3 object-contain rounded" />
+        ) : (
+          <Boxes className="w-6 h-6 mr-3 text-blue-500 flex-shrink-0" />
+        )}
+        <span className="truncate">{loginTitle}</span>
       </div>
       <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
         {visibleItems.map((item) => (

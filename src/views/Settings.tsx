@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { getDB, setDB } from '../lib/storage';
+import { getDB, setDB, useDB } from '../lib/storage';
 import { ImagePlus, Save } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 
 export function Settings() {
+  const dbState = useDB();
   const [logo, setLogo] = useState<string | null>(null);
   const [loginTitle, setLoginTitle] = useState('OSIS Inventory');
   const [loginSubtitle, setLoginSubtitle] = useState('Masuk ke akun Anda');
@@ -12,13 +13,12 @@ export function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const db = getDB();
-    if (db.settings) {
-      if (db.settings.logo) setLogo(db.settings.logo);
-      if (db.settings.login_title) setLoginTitle(db.settings.login_title);
-      if (db.settings.login_subtitle) setLoginSubtitle(db.settings.login_subtitle);
+    if (dbState.settings) {
+      setLogo(dbState.settings.logo || null);
+      setLoginTitle(dbState.settings.login_title || 'OSIS Inventory');
+      setLoginSubtitle(dbState.settings.login_subtitle || 'Masuk ke akun Anda');
     }
-  }, []);
+  }, [dbState]);
 
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
