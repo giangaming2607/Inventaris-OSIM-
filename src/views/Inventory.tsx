@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
-import { Plus, Search, Edit2, Trash2, Filter, Upload } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Filter, Upload, Download } from 'lucide-react';
 import { getDB, setDB, addLog } from '../lib/storage';
 import { Inventaris, Kategori, KondisiBarang, User } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,7 +38,11 @@ export function Inventory({ currentUser }: { currentUser: User }) {
     setCategories(db.kategori);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { 
+    loadData(); 
+    window.addEventListener('db-update', loadData);
+    return () => window.removeEventListener('db-update', loadData);
+  }, [categories]);
 
   const handleOpenModal = (item?: Inventaris) => {
     if (item) {
@@ -121,6 +125,38 @@ export function Inventory({ currentUser }: { currentUser: User }) {
     }
   };
 
+  const handleExportCSV = () => {
+    const headers = ['Kode Barang', 'Nama Barang', 'Kategori', 'Stok Tersedia', 'Total', 'Kondisi', 'Lokasi', 'Tanggal Masuk', 'Keterangan'];
+    const escapeCSV = (str: string) => `"${str?.replace(/"/g, '""') || ''}"`;
+    
+    const rows = filteredData.map(item => {
+      const kat = categories.find(k => k.kategori_id === item.kategori_id)?.nama_kategori || 'Tanpa Kategori';
+      return [
+        item.kode_barang,
+        item.nama_barang,
+        kat,
+        item.jumlah_tersedia,
+        item.jumlah_total,
+        item.kondisi,
+        item.lokasi,
+        formatDate(item.tanggal_masuk),
+        item.keterangan || '-'
+      ].map(val => escapeCSV(String(val))).join(',');
+    });
+
+    const csvContent = [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Inventaris_OSIM_${format(new Date(), 'yyyyMMdd')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -128,11 +164,16 @@ export function Inventory({ currentUser }: { currentUser: User }) {
           <h2 className="text-2xl font-bold text-white">Manajemen Inventaris</h2>
           <p className="text-neutral-500 mt-1">Daftar seluruh barang inventaris sekretariat.</p>
         </div>
-        {currentUser.role === 'Admin' && (
-          <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
-            <Plus className="w-4 h-4" /> Tambah Barang
+        <div className="flex items-center gap-2">
+          <Button onClick={handleExportCSV} variant="outline" className="flex items-center gap-2 border-neutral-700 bg-neutral-900 text-neutral-300 hover:bg-neutral-800">
+            <Download className="w-4 h-4" /> Export CSV
           </Button>
-        )}
+          {currentUser.role === 'Admin' && (
+            <Button onClick={() => handleOpenModal()} className="flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Tambah Barang
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>

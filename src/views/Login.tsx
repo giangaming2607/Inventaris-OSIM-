@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { getDB } from '../lib/storage';
+import { useState } from 'react';
+import { getDB, useDB } from '../lib/storage';
 import { User } from '../types';
 
 interface LoginProps {
@@ -10,24 +10,17 @@ export function Login({ onLogin }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const [logo, setLogo] = useState<string | null>(null);
-  const [loginTitle, setLoginTitle] = useState('OSIS Inventory');
-  const [loginSubtitle, setLoginSubtitle] = useState('Masuk ke akun Anda');
+  const db = useDB();
 
-  useEffect(() => {
-    const db = getDB();
-    if (db.settings) {
-      if (db.settings.logo) setLogo(db.settings.logo);
-      if (db.settings.login_title) setLoginTitle(db.settings.login_title);
-      if (db.settings.login_subtitle) setLoginSubtitle(db.settings.login_subtitle);
-    }
-  }, []);
+  const logo = db.settings?.logo || null;
+  const loginTitle = db.settings?.login_title || 'OSIS Inventory';
+  const loginSubtitle = db.settings?.login_subtitle || 'Masuk ke akun Anda';
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    const db = getDB();
+    const currentDb = getDB();
     
-    const user = db.users.find(u => u.username === username);
+    const user = currentDb.users.find(u => u.username === username);
     
     if (user && user.password === password) {
       onLogin(user);

@@ -23,7 +23,11 @@ export function Users() {
     setUsers(db.users);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { 
+    loadData(); 
+    window.addEventListener('db-update', loadData);
+    return () => window.removeEventListener('db-update', loadData);
+  }, []);
 
   const handleOpenModal = (user?: User) => {
     if (user) {

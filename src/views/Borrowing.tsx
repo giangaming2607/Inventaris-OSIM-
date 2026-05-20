@@ -34,7 +34,11 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
     setPengembalian(db.pengembalian);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { 
+    loadData(); 
+    window.addEventListener('db-update', loadData);
+    return () => window.removeEventListener('db-update', loadData);
+  }, []);
 
   const handleOpenModal = () => {
     setSelectedBarang('');

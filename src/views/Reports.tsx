@@ -15,12 +15,18 @@ export function Reports() {
 
   const [activeTab, setActiveTab] = useState<'stok' | 'rusak' | 'peminjaman'>('stok');
 
-  useEffect(() => {
+  const loadData = () => {
     const db = getDB();
     setInventaris(db.inventaris);
     setPeminjaman(db.peminjaman);
     setKategori(db.kategori);
     setUsers(db.users);
+  };
+
+  useEffect(() => {
+    loadData();
+    window.addEventListener('db-update', loadData);
+    return () => window.removeEventListener('db-update', loadData);
   }, []);
 
   const handlePrint = () => {

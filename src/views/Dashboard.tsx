@@ -1,12 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/Card';
-import { getDB } from '../lib/storage';
-import { Boxes, PackageCheck, PackageMinus, AlertTriangle, ArrowUpRight, ArrowDownRight } from 'lucide-react';
-import { Badge } from '../components/ui/Badge';
+import { useDB } from '../lib/storage';
+import { Boxes, PackageCheck, PackageMinus, AlertTriangle } from 'lucide-react';
 import { formatDateTime } from '../lib/utils';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export function Dashboard() {
-  const db = getDB();
+  const db = useDB();
   
   const totalBarang = db.inventaris.reduce((acc, curr) => acc + curr.jumlah_total, 0);
   const totalTersedia = db.inventaris.reduce((acc, curr) => acc + curr.jumlah_tersedia, 0);

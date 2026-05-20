@@ -22,7 +22,11 @@ export function Categories() {
     setKategori(db.kategori);
   };
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { 
+    loadData(); 
+    window.addEventListener('db-update', loadData);
+    return () => window.removeEventListener('db-update', loadData);
+  }, []);
 
   const handleOpenModal = (cat?: Kategori) => {
     if (cat) {
