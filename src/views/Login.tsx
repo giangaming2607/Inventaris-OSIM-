@@ -11,11 +11,15 @@ export function Login({ onLogin }: LoginProps) {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [logo, setLogo] = useState<string | null>(null);
+  const [loginTitle, setLoginTitle] = useState('OSIS Inventory');
+  const [loginSubtitle, setLoginSubtitle] = useState('Masuk ke akun Anda');
 
   useEffect(() => {
     const db = getDB();
-    if (db.settings?.logo) {
-      setLogo(db.settings.logo);
+    if (db.settings) {
+      if (db.settings.logo) setLogo(db.settings.logo);
+      if (db.settings.login_title) setLoginTitle(db.settings.login_title);
+      if (db.settings.login_subtitle) setLoginSubtitle(db.settings.login_subtitle);
     }
   }, []);
 
@@ -39,8 +43,9 @@ export function Login({ onLogin }: LoginProps) {
           {logo && (
             <img src={logo} alt="Logo" className="h-24 object-contain mx-auto mb-4" />
           )}
-          {!logo && <h1 className="text-2xl font-semibold text-white tracking-tight">OSIS Inventory</h1>}
-          <p className="text-sm text-neutral-500 mt-2">Masuk ke akun Anda</p>
+          {!logo && <h1 className="text-2xl font-semibold text-white tracking-tight">{loginTitle}</h1>}
+          {logo && loginTitle && <h1 className="text-2xl font-semibold text-white tracking-tight mt-4">{loginTitle}</h1>}
+          <p className="text-sm text-neutral-500 mt-2">{loginSubtitle}</p>
         </div>
 
         {error && (

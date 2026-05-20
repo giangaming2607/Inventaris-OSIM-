@@ -5,13 +5,18 @@ import { Button } from '../components/ui/Button';
 
 export function Settings() {
   const [logo, setLogo] = useState<string | null>(null);
+  const [loginTitle, setLoginTitle] = useState('OSIS Inventory');
+  const [loginSubtitle, setLoginSubtitle] = useState('Masuk ke akun Anda');
   const [isSaved, setIsSaved] = useState(false);
+  const [isTextSaved, setIsTextSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const db = getDB();
-    if (db.settings?.logo) {
-      setLogo(db.settings.logo);
+    if (db.settings) {
+      if (db.settings.logo) setLogo(db.settings.logo);
+      if (db.settings.login_title) setLoginTitle(db.settings.login_title);
+      if (db.settings.login_subtitle) setLoginSubtitle(db.settings.login_subtitle);
     }
   }, []);
 
@@ -31,6 +36,18 @@ export function Settings() {
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleSaveText = () => {
+    const db = getDB();
+    db.settings = { 
+      ...db.settings, 
+      login_title: loginTitle,
+      login_subtitle: loginSubtitle
+    };
+    setDB(db);
+    setIsTextSaved(true);
+    setTimeout(() => setIsTextSaved(false), 3000);
   };
 
   return (
@@ -102,6 +119,43 @@ export function Settings() {
                 accept="image/*"
                 onChange={handleLogoUpload}
               />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden mt-6">
+        <div className="px-6 py-5 border-b border-neutral-800 flex justify-between items-center">
+          <h2 className="text-lg font-medium text-white">Teks Halaman Login</h2>
+          {isTextSaved && <span className="text-sm text-green-500 font-medium">Berhasil disimpan</span>}
+        </div>
+        <div className="p-6">
+          <div className="space-y-4 max-w-lg">
+            <div>
+              <label className="block text-sm font-medium text-neutral-300 mb-1">Judul Login</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 bg-[#0A0A0A] border border-neutral-800 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 text-white sm:text-sm"
+                value={loginTitle}
+                onChange={(e) => setLoginTitle(e.target.value)}
+                placeholder="OSIS Inventory"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-neutral-300 mb-1">Sub Judul Login</label>
+              <input
+                type="text"
+                className="w-full px-3 py-2 bg-[#0A0A0A] border border-neutral-800 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-blue-600 focus:border-blue-600 text-white sm:text-sm"
+                value={loginSubtitle}
+                onChange={(e) => setLoginSubtitle(e.target.value)}
+                placeholder="Masuk ke akun Anda"
+              />
+            </div>
+            <div className="pt-2">
+              <Button onClick={handleSaveText} variant="primary">
+                <Save className="w-4 h-4 mr-2" />
+                Simpan Perubahan
+              </Button>
             </div>
           </div>
         </div>

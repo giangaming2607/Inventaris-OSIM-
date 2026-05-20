@@ -62,6 +62,8 @@ export interface LogAktivitas {
 
 export interface AppSettings {
   logo?: string;
+  login_title?: string;
+  login_subtitle?: string;
 }
 
 export interface DatabaseSchema {
