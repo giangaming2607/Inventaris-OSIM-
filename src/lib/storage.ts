@@ -156,7 +156,11 @@ export async function syncFromServer() {
         const currentHash = computeHash(val);
         
         if (currentHash !== lastHashes[key]) {
-          (cachedDB as any)[key] = val;
+          // Create a brand new object reference to enforce React reactivity across devices
+          cachedDB = {
+            ...cachedDB,
+            [key]: val
+          };
           lastHashes[key] = currentHash;
           
           localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cachedDB));
@@ -199,16 +203,17 @@ export const getDB = (): DatabaseSchema => {
 
 // Publisher helper to save and dispatch updates to express backend
 export const setDB = (data: DatabaseSchema) => {
-  cachedDB = data;
+  // Always clone the database to generate a brand new object reference
+  cachedDB = { ...data };
   if (typeof window !== 'undefined') {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cachedDB));
     window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
   }
 
   // Save to Firebase ONLY if initial sync has completed
   if (typeof window !== 'undefined' && hasSyncedFromServer) {
     dbKeys.forEach((key) => {
-      const currentVal = data[key];
+      const currentVal = cachedDB[key];
       const newHash = computeHash(currentVal);
       
       // Save only slices that actually changed compared to what we last tracked
@@ -225,12 +230,13 @@ export const setDB = (data: DatabaseSchema) => {
 
 // Custom hook for components to bind reactively to DB changes
 export function useDB() {
-  const [db, setDb] = useState<DatabaseSchema>(cachedDB);
+  const [db, setDb] = useState<DatabaseSchema>(() => ({ ...cachedDB }));
 
   useEffect(() => {
     const handleUpdate = (e: Event) => {
       const customEvent = e as CustomEvent<DatabaseSchema>;
-      setDb(customEvent.detail || cachedDB);
+      const detailDb = customEvent.detail || cachedDB;
+      setDb({ ...detailDb });
     };
 
     window.addEventListener("db-update", handleUpdate);

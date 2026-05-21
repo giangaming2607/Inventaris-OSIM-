@@ -40,7 +40,7 @@ export function Settings({ onBack }: SettingsProps) {
           if (onBack) {
             setTimeout(() => {
               onBack();
-            }, 1200);
+            }, 100);
           }
         })
         .catch((error) => {
@@ -63,7 +63,7 @@ export function Settings({ onBack }: SettingsProps) {
     if (onBack) {
       setTimeout(() => {
         onBack();
-      }, 1200);
+      }, 100);
     }
   };
 

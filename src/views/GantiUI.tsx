@@ -70,7 +70,7 @@ export function GantiUI({ onBack }: GantiUIProps) {
     if (onBack) {
       setTimeout(() => {
         onBack();
-      }, 1200);
+      }, 100);
     }
   };
 
