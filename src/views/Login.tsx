@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { getDB, useDB } from '../lib/storage';
 import { User } from '../types';
+import { toast } from 'sonner';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -10,7 +11,6 @@ interface LoginProps {
 export function Login({ onLogin, onCancel }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
   const db = useDB();
 
   const logo = db.settings?.logo || null;
@@ -24,9 +24,10 @@ export function Login({ onLogin, onCancel }: LoginProps) {
     const user = currentDb.users.find(u => u.username === username);
     
     if (user && user.password === password) {
+      toast.success('Login berhasil!', { duration: 1000 });
       onLogin(user);
     } else {
-      setError('Username atau password salah.');
+      toast.error('Username atau password salah.', { duration: 1000 });
     }
   };
 
@@ -44,12 +45,6 @@ export function Login({ onLogin, onCancel }: LoginProps) {
           {logo && loginTitle && <h1 className="text-2xl font-semibold text-white tracking-tight mt-4">{loginTitle}</h1>}
           <p className="text-sm text-neutral-500 mt-2">{loginSubtitle}</p>
         </div>
-
-        {error && (
-          <div className="mb-4 bg-red-900/30 border border-red-900 text-red-500 text-sm px-4 py-3 rounded-lg">
-            {error}
-          </div>
-        )}
 
         <form onSubmit={handleLogin} className="space-y-5">
           <div>

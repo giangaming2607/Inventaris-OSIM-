@@ -11,6 +11,9 @@ import { Returns } from './views/Returns';
 import { Users } from './views/Users';
 import { Reports } from './views/Reports';
 import { Settings } from './views/Settings';
+import { GantiUI } from './views/GantiUI';
+import { Toaster } from 'sonner';
+import { getActiveTheme, applyTheme } from './lib/theme';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(() => {
@@ -41,6 +44,10 @@ export default function App() {
     status: 'Aktif',
     created_at: new Date().toISOString()
   };
+
+  useEffect(() => {
+    applyTheme(getActiveTheme());
+  }, []);
 
   useEffect(() => {
     // Apabila user masih belum login atau saat aplikasi pertama kali dimuat,
@@ -111,20 +118,24 @@ export default function App() {
       case 'users': return activeUser.role === 'Admin' ? <Users /> : <Borrowing currentUser={activeUser} />;
       case 'reports': return activeUser.role === 'Admin' ? <Reports /> : <Borrowing currentUser={activeUser} />;
       case 'settings': return activeUser.role === 'Admin' ? <Settings /> : <Borrowing currentUser={activeUser} />;
+      case 'ganti-ui': return activeUser.role === 'Admin' ? <GantiUI /> : <Borrowing currentUser={activeUser} />;
       default: return <Borrowing currentUser={activeUser} />;
     }
   };
 
   return (
-    <Layout 
-      currentView={currentView} 
-      onNavigate={setCurrentView} 
-      currentUser={activeUser} 
-      onLogout={handleLogout}
-      isSidebarOpen={isSidebarOpen}
-      toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-    >
-      {renderView()}
-    </Layout>
+    <>
+      <Toaster position="bottom-center" duration={3000} />
+      <Layout 
+        currentView={currentView} 
+        onNavigate={setCurrentView} 
+        currentUser={activeUser} 
+        onLogout={handleLogout}
+        isSidebarOpen={isSidebarOpen}
+        toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+      >
+        {renderView()}
+      </Layout>
+    </>
   );
 }

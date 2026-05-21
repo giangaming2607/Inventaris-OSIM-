@@ -4,13 +4,14 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
-import { Search, Undo2, AlertCircle, Camera, CheckCircle2 } from 'lucide-react';
+import { Search, Undo2, AlertCircle, Camera, CheckCircle2, RotateCw } from 'lucide-react';
 import { getDB, setDB, addLog } from '../lib/storage';
 import { Inventaris, Peminjaman, Pengembalian, User, KondisiBarang } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { formatDate } from '../lib/utils';
 import { differenceInDays } from 'date-fns';
 import { useRef } from 'react';
+import { toast } from 'sonner';
 
 export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: User, initialTab?: 'pending' | 'history' }) {
   const [peminjaman, setPeminjaman] = useState<Peminjaman[]>([]);
@@ -33,6 +34,7 @@ export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: 
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadData = () => {
     const db = getDB();
@@ -40,6 +42,15 @@ export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: 
     setInventaris(db.inventaris);
     setUsers(db.users);
     setPengembalian(db.pengembalian);
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadData();
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success('Data berhasil dimuat ulang!');
+    }, 800);
   };
 
   useEffect(() => { 
@@ -124,6 +135,7 @@ export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: 
     setDB(db);
     loadData();
     setIsModalOpen(false);
+    toast.success('Barang berhasil dikembalikan', { duration: 1000 });
   };
 
   const activeLoans = peminjaman.filter(p => p.status === 'Dipinjam');
@@ -150,11 +162,20 @@ export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: 
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white">Pengembalian Barang</h2>
           <p className="text-neutral-500 mt-1">Daftar barang yang sedang dipinjam dan riwayat pengembalian.</p>
         </div>
+        <Button 
+          variant="outline" 
+          onClick={handleRefresh} 
+          disabled={isRefreshing}
+          className="flex items-center gap-2 cursor-pointer border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-850"
+        >
+          <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} style={{ color: 'var(--thm-primary)' }} />
+          <span>Refresh Data</span>
+        </Button>
       </div>
 
       <div className="flex gap-4 border-b border-neutral-800 pb-2">

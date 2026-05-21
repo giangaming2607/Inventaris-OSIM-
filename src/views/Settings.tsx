@@ -2,14 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { getDB, setDB, useDB } from '../lib/storage';
 import { ImagePlus, Save } from 'lucide-react';
 import { Button } from '../components/ui/Button';
+import { toast } from 'sonner';
 
 export function Settings() {
   const dbState = useDB();
   const [logo, setLogo] = useState<string | null>(null);
   const [loginTitle, setLoginTitle] = useState('OSIS Inventory');
   const [loginSubtitle, setLoginSubtitle] = useState('Masuk ke akun Anda');
-  const [isSaved, setIsSaved] = useState(false);
-  const [isTextSaved, setIsTextSaved] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -31,8 +30,7 @@ export function Settings() {
         const db = getDB();
         db.settings = { ...db.settings, logo: base64String };
         setDB(db);
-        setIsSaved(true);
-        setTimeout(() => setIsSaved(false), 3000);
+        toast.success('Logo berhasil disimpan', { duration: 1000 });
       };
       reader.readAsDataURL(file);
     }
@@ -46,8 +44,7 @@ export function Settings() {
       login_subtitle: loginSubtitle
     };
     setDB(db);
-    setIsTextSaved(true);
-    setTimeout(() => setIsTextSaved(false), 3000);
+    toast.success('Teks pengaturan berhasil disimpan', { duration: 1000 });
   };
 
   return (
@@ -60,7 +57,6 @@ export function Settings() {
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
         <div className="px-6 py-5 border-b border-neutral-800 flex justify-between items-center">
           <h2 className="text-lg font-medium text-white">Logo Aplikasi</h2>
-          {isSaved && <span className="text-sm text-green-500 font-medium">Berhasil disimpan</span>}
         </div>
         <div className="p-6">
           <div className="flex items-start space-x-8">
@@ -101,8 +97,7 @@ export function Settings() {
                       if (db.settings) {
                         delete db.settings.logo;
                         setDB(db);
-                        setIsSaved(true);
-                        setTimeout(() => setIsSaved(false), 3000);
+                        toast.success('Logo berhasil dihapus', { duration: 1000 });
                       }
                     }}
                     variant="danger"
@@ -127,7 +122,6 @@ export function Settings() {
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden mt-6">
         <div className="px-6 py-5 border-b border-neutral-800 flex justify-between items-center">
           <h2 className="text-lg font-medium text-white">Teks Halaman Login</h2>
-          {isTextSaved && <span className="text-sm text-green-500 font-medium">Berhasil disimpan</span>}
         </div>
         <div className="p-6">
           <div className="space-y-4 max-w-lg">

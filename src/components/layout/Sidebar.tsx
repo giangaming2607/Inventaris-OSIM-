@@ -1,6 +1,6 @@
 import { 
   Boxes, LayoutDashboard, Tags, ClipboardList, 
-  ArrowLeftRight, Users, FileBarChart, Settings, History
+  ArrowLeftRight, Users, FileBarChart, Settings, History, Palette
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Role } from '../../types';
@@ -27,6 +27,7 @@ export function Sidebar({ currentView, onNavigate, userRole }: SidebarProps) {
     { id: 'users', label: 'Pengguna', icon: Users, roles: ['Admin'] },
     { id: 'reports', label: 'Laporan', icon: FileBarChart, roles: ['Admin'] },
     { id: 'settings', label: 'Pengaturan', icon: Settings, roles: ['Admin'] },
+    { id: 'ganti-ui', label: 'Ganti UI', icon: Palette, roles: ['Admin'] },
   ];
 
   const visibleItems = menuItems.filter(item => item.roles.includes(userRole));

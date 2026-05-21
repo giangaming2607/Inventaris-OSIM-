@@ -10,6 +10,7 @@ import { Inventaris, Kategori, KondisiBarang, User } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { generateKodeBarang, formatDate } from '../lib/utils';
 import { format } from 'date-fns';
+import { toast } from 'sonner';
 
 export function Inventory({ currentUser }: { currentUser: User }) {
   const [items, setItems] = useState<Inventaris[]>([]);
@@ -80,6 +81,7 @@ export function Inventory({ currentUser }: { currentUser: User }) {
           : i
       );
       addLog(currentUser.user_id, `Mengubah data barang: ${formData.nama_barang}`);
+      toast.success('Data barang berhasil diubah!', { duration: 1000 });
     } else {
       const newItem: Inventaris = {
         barang_id: uuidv4(),
@@ -90,6 +92,7 @@ export function Inventory({ currentUser }: { currentUser: User }) {
       };
       db.inventaris.push(newItem);
       addLog(currentUser.user_id, `Menambahkan barang baru: ${formData.nama_barang}`);
+      toast.success('Barang baru berhasil ditambahkan!', { duration: 1000 });
     }
     setDB(db);
     loadData();
@@ -103,6 +106,7 @@ export function Inventory({ currentUser }: { currentUser: User }) {
       addLog(currentUser.user_id, `Menghapus barang: ${nama}`);
       setDB(db);
       loadData();
+      toast.success('Barang berhasil dihapus!', { duration: 1000 });
     }
   };
 

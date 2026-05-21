@@ -8,6 +8,7 @@ import { Plus, Search, Edit2, Trash2 } from 'lucide-react';
 import { getDB, setDB, addLog } from '../lib/storage';
 import { User, Kategori } from '../types';
 import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
 
 export function Categories() {
   const [kategori, setKategori] = useState<Kategori[]>([]);
@@ -50,6 +51,7 @@ export function Categories() {
           : k
       );
       addLog('admin-1', `Mengubah kategori: ${formData.nama}`);
+      toast.success('Kategori berhasil diubah', { duration: 1000 });
     } else {
       const newCat: Kategori = {
         kategori_id: uuidv4(),
@@ -58,6 +60,7 @@ export function Categories() {
       };
       db.kategori.push(newCat);
       addLog('admin-1', `Menambahkan kategori baru: ${formData.nama}`);
+      toast.success('Kategori berhasil ditambahkan', { duration: 1000 });
     }
     setDB(db);
     loadData();
@@ -71,6 +74,7 @@ export function Categories() {
       addLog('admin-1', `Menghapus kategori: ${nama}`);
       setDB(db);
       loadData();
+      toast.success('Kategori berhasil dihapus', { duration: 1000 });
     }
   };
 

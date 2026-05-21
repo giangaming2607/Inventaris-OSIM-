@@ -4,12 +4,13 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
-import { Plus, Search, Calendar, ChevronRight } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronRight, RotateCw } from 'lucide-react';
 import { getDB, setDB, addLog } from '../lib/storage';
 import { Inventaris, Peminjaman, User, StatusPeminjaman } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { formatDate } from '../lib/utils';
 import { differenceInDays } from 'date-fns';
+import { toast } from 'sonner';
 
 export function Borrowing({ currentUser }: { currentUser: User }) {
   const [peminjaman, setPeminjaman] = useState<Peminjaman[]>([]);
@@ -26,6 +27,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadData = () => {
     const db = getDB();
@@ -33,6 +35,15 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
     setInventaris(db.inventaris);
     setUsers(db.users);
     setPengembalian(db.pengembalian);
+  };
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    loadData();
+    setTimeout(() => {
+      setIsRefreshing(false);
+      toast.success('Data riwayat berhasil dimuat ulang!');
+    }, 800);
   };
 
   useEffect(() => { 
@@ -52,12 +63,12 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
 
   const handleAjukan = () => {
     if (!selectedBarang || !tglKembali || jumlah <= 0) {
-      alert('Harap lengkapi formular peminjaman.');
+      toast.error('Harap lengkapi formulir peminjaman.', { duration: 1000 });
       return;
     }
 
     if (currentUser.role === 'Peminjam' && !namaPeminjam.trim()) {
-      alert('Harap masukkan nama peminjam.');
+      toast.error('Harap masukkan nama peminjam.', { duration: 1000 });
       return;
     }
 
@@ -67,7 +78,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
     if (!barang) return;
 
     if (jumlah > barang.jumlah_tersedia) {
-      alert(`Stok tidak mencukupi. Tersedia hanya ${barang.jumlah_tersedia}.`);
+      toast.error(`Stok tidak mencukupi. Tersedia hanya ${barang.jumlah_tersedia}.`, { duration: 1000 });
       return;
     }
 
@@ -112,6 +123,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
     setDB(db);
     loadData();
     setIsModalOpen(false);
+    toast.success('Peminjaman berhasil diajukan', { duration: 1000 });
   };
 
   const getStatusBadge = (status: StatusPeminjaman) => {
@@ -128,7 +140,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
     if (ret && ret.foto_pengembalian) {
       setPhotoPreview(ret.foto_pengembalian);
     } else {
-      alert('Foto pengembalian tidak ditemukan.');
+      toast.error('Foto pengembalian tidak ditemukan.', { duration: 1000 });
     }
   };
 
@@ -149,9 +161,20 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
           <h2 className="text-2xl font-bold text-white">Peminjaman Barang</h2>
           <p className="text-neutral-500 mt-1">Ajukan dan pantau barang yang sedang dipinjam.</p>
         </div>
-        <Button onClick={handleOpenModal} className="flex items-center gap-2">
-          <Plus className="w-4 h-4" /> Ajukan Peminjaman
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleRefresh} 
+            disabled={isRefreshing}
+            className="flex items-center gap-2 cursor-pointer border-neutral-800 text-neutral-300 hover:text-white hover:bg-neutral-850"
+          >
+            <RotateCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} style={{ color: 'var(--thm-primary)' }} />
+            <span>Refresh</span>
+          </Button>
+          <Button onClick={handleOpenModal} className="flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Ajukan Peminjaman
+          </Button>
+        </div>
       </div>
 
       <Card>
