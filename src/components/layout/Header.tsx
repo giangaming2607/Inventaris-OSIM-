@@ -3,11 +3,12 @@ import { User } from '../../types';
 
 interface HeaderProps {
   currentUser: User;
+  isLoggedIn: boolean;
   onLogout: () => void;
   toggleSidebar: () => void;
 }
 
-export function Header({ currentUser, onLogout, toggleSidebar }: HeaderProps) {
+export function Header({ currentUser, isLoggedIn, onLogout, toggleSidebar }: HeaderProps) {
   return (
     <header className="h-16 bg-[#0A0A0A] border-b border-neutral-800 flex items-center justify-between px-6 z-10 flex-shrink-0">
       <div className="flex items-center text-neutral-500 font-medium space-x-4">
@@ -29,12 +30,12 @@ export function Header({ currentUser, onLogout, toggleSidebar }: HeaderProps) {
           <div className="flex flex-col items-end">
             <span className="text-sm font-medium text-white">{currentUser.nama}</span>
             <span className="text-xs text-neutral-500">
-              {currentUser.role === 'Peminjam' ? 'Tamu' : `Role: ${currentUser.role}`}
+              {isLoggedIn ? `Role: ${currentUser.role}` : 'Pengunjung (Pengurus)'}
             </span>
           </div>
           <UserCircle className="w-9 h-9 text-neutral-700" />
           
-          {currentUser.role !== 'Peminjam' && (
+          {isLoggedIn && (
             <button 
               onClick={onLogout}
               className="flex items-center justify-center p-2 text-neutral-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors ml-2"

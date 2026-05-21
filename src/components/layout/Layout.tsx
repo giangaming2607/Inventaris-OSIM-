@@ -8,6 +8,7 @@ interface LayoutProps {
   currentView: string;
   onNavigate: (view: string) => void;
   currentUser: User;
+  isLoggedIn: boolean;
   onLogout: () => void;
   isSidebarOpen: boolean;
   toggleSidebar: () => void;
@@ -18,6 +19,7 @@ export function Layout({
   currentView, 
   onNavigate, 
   currentUser, 
+  isLoggedIn,
   onLogout,
   isSidebarOpen,
   toggleSidebar
@@ -30,6 +32,7 @@ export function Layout({
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header 
           currentUser={currentUser} 
+          isLoggedIn={isLoggedIn}
           onLogout={onLogout} 
           toggleSidebar={toggleSidebar} 
         />

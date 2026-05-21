@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from './types';
-import { getDB, setCurrentUser, addLog } from './lib/storage';
+import { getDB, useDB, useDBReady, setCurrentUser, addLog } from './lib/storage';
 import { Layout } from './components/layout/Layout';
 import { Login } from './views/Login';
 import { Dashboard } from './views/Dashboard';
@@ -16,6 +16,7 @@ import { Toaster } from 'sonner';
 import { getActiveTheme, applyTheme } from './lib/theme';
 
 export default function App() {
+  const db = useDB();
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
       const savedUser = localStorage.getItem('osim_current_user');
@@ -33,16 +34,25 @@ export default function App() {
     }
     return null;
   });
-  const [currentView, setCurrentView] = useState(user ? 'dashboard' : 'borrowing');
+  const [currentView, setCurrentView] = useState('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
-  const guestUser: User = {
-    user_id: 'guest',
-    nama: 'Pengunjung',
-    username: 'guest',
-    role: 'Peminjam',
+  const dbPengurus = db.users.find(u => u.role === 'Pengurus') || {
+    user_id: 'pengurus-1',
+    nama: 'Budi (Pengurus)',
+    username: 'petugas',
+    role: 'Pengurus',
     status: 'Aktif',
     created_at: new Date().toISOString()
+  };
+
+  const guestUser: User = {
+    user_id: dbPengurus.user_id,
+    nama: dbPengurus.nama,
+    username: dbPengurus.username,
+    role: 'Pengurus',
+    status: 'Aktif',
+    created_at: dbPengurus.created_at
   };
 
   useEffect(() => {
@@ -100,11 +110,30 @@ export default function App() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('osim_current_user');
     }
-    setCurrentView('borrowing');
+    setCurrentView('dashboard');
   };
 
+  const isReady = useDBReady();
+
+  if (!isReady) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#050505] text-[#F3F4F6]">
+        <div className="flex flex-col items-center max-w-sm px-6 text-center space-y-4">
+          <div className="relative flex items-center justify-center w-12 h-12">
+            <div className="absolute w-12 h-12 border-4 border-blue-600/20 rounded-full"></div>
+            <div className="absolute w-12 h-12 border-4 border-t-blue-500 border-r-blue-500 rounded-full animate-spin"></div>
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-semibold tracking-tight text-white">Sinkronisasi Database</h3>
+            <p className="text-sm text-neutral-500 text-center">Mengkoneksikan perangkat dan mengambil data terbaru secara real-time...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (currentView === 'login') {
-    return <Login onLogin={handleLogin} onCancel={() => setCurrentView('borrowing')} />;
+    return <Login onLogin={handleLogin} onCancel={() => setCurrentView('dashboard')} />;
   }
 
   const renderView = () => {
@@ -130,6 +159,7 @@ export default function App() {
         currentView={currentView} 
         onNavigate={setCurrentView} 
         currentUser={activeUser} 
+        isLoggedIn={user !== null}
         onLogout={handleLogout}
         isSidebarOpen={isSidebarOpen}
         toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}

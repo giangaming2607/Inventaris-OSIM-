@@ -67,7 +67,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
       return;
     }
 
-    if (currentUser.role === 'Peminjam' && !namaPeminjam.trim()) {
+    if ((currentUser.role === 'Peminjam' || currentUser.role === 'Pengurus') && !namaPeminjam.trim()) {
       toast.error('Harap masukkan nama peminjam.', { duration: 1000 });
       return;
     }
@@ -84,7 +84,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
 
     let actualUserId = currentUser.user_id;
 
-    if (currentUser.role === 'Peminjam') {
+    if (currentUser.role === 'Peminjam' || currentUser.role === 'Pengurus') {
       // Find or create a temporary user for this name
       let tempUser = db.users.find(u => u.nama.toLowerCase() === namaPeminjam.toLowerCase() && u.role === 'Peminjam');
       if (!tempUser) {
@@ -265,10 +265,10 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
         }
       >
         <div className="space-y-5">
-           {currentUser.role === 'Peminjam' && (
+           {(currentUser.role === 'Peminjam' || currentUser.role === 'Pengurus') && (
              <Input 
                label="Nama Lengkap Peminjam" 
-               placeholder="Masukkan nama lengkap anda..."
+               placeholder="Masukkan nama lengkap peminjam..."
                value={namaPeminjam}
                onChange={e => setNamaPeminjam(e.target.value)}
              />

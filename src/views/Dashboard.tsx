@@ -157,7 +157,7 @@ export function Dashboard() {
             <div className="divide-y divide-neutral-800 max-h-[250px] overflow-y-auto">
               {db.log_aktivitas.filter(l => l.aktivitas === 'Login ke sistem' || l.aktivitas === 'Akses sebagai pengunjung').slice(0, 10).map((log) => {
                 const user = db.users.find(u => u.user_id === log.user_id);
-                const isGuest = log.user_id === 'guest';
+                const isGuest = log.user_id === 'guest' || log.user_id === 'pengurus-1' || log.user_id.startsWith('pengurus');
                 
                 let lat = '', lng = '';
                 if (log.lokasi && log.lokasi.startsWith('Lat:')) {
@@ -171,7 +171,7 @@ export function Dashboard() {
                 return (
                   <div key={log.log_id} className="p-4 hover:bg-[#111111] transition-colors flex justify-between items-center">
                     <div>
-                      <p className="text-sm text-white font-medium">{isGuest ? 'Pengunjung' : (user?.nama || 'Unknown')} <span className="text-neutral-500 font-normal">({isGuest ? 'Peminjam' : user?.role})</span></p>
+                      <p className="text-sm text-white font-medium">{isGuest ? 'Pengunjung' : (user?.nama || 'Unknown')} <span className="text-neutral-500 font-normal">({isGuest ? 'Pengurus' : user?.role})</span></p>
                       <div className="flex items-center gap-2 mt-1">
                         <p className="text-xs text-neutral-500">Aktivitas: {log.aktivitas}</p>
                         <span className="text-xs text-neutral-600">•</span>

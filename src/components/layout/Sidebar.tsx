@@ -59,13 +59,14 @@ export function Sidebar({ currentView, onNavigate, userRole }: SidebarProps) {
           </button>
         ))}
 
-        {userRole === 'Peminjam' && (
+        {userRole === 'Pengurus' && (
           <button
             onClick={() => onNavigate('login')}
-            className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-neutral-800 hover:text-white mt-4 text-blue-400"
+            className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-neutral-800 mt-4 text-blue-500 border border-neutral-800"
+            style={{ color: 'var(--thm-primary)', borderColor: 'var(--thm-border)' }}
           >
-            <Users className="w-5 h-5 mr-3 opacity-70" />
-            Login Admin
+            <Users className="w-5 h-5 mr-3 opacity-70" style={{ color: 'var(--thm-primary)' }} />
+            Masuk sebagai Admin
           </button>
         )}
       </nav>

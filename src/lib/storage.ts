@@ -102,6 +102,7 @@ const loadInitialDB = (): DatabaseSchema => {
 // In-memory cache
 let cachedDB: DatabaseSchema = loadInitialDB();
 let lastHash = "";
+let hasSyncedFromServer = false;
 
 // Helper to compute a simple hash string to check for differences
 function computeHash(obj: any): string {
@@ -132,14 +133,28 @@ export async function syncFromServer() {
           window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
         }
       } else {
-        // Init if not exists
+        // Init if not exists with client's cached/default data
         setDoc(docRef, cachedDB).catch(console.error);
+      }
+      
+      if (!hasSyncedFromServer) {
+        hasSyncedFromServer = true;
+        window.dispatchEvent(new CustomEvent("db-init-complete"));
       }
     }, (err) => {
       console.error("Firebase sync error", err);
+      // Fallback to local offline mode to avoid getting stuck forever
+      if (!hasSyncedFromServer) {
+        hasSyncedFromServer = true;
+        window.dispatchEvent(new CustomEvent("db-init-complete"));
+      }
     });
   } catch (error) {
     console.error("Failed to connect to Firebase:", error);
+    if (!hasSyncedFromServer) {
+      hasSyncedFromServer = true;
+      window.dispatchEvent(new CustomEvent("db-init-complete"));
+    }
   }
 }
 
@@ -163,12 +178,16 @@ export const setDB = (data: DatabaseSchema) => {
     window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
   }
 
-  // Save to Firebase
+  // Save to Firebase ONLY if initial sync has completed
   if (typeof window !== 'undefined') {
-    const docRef = doc(firestoreDb, "db", "state");
-    setDoc(docRef, data).catch((err) => {
-      console.error("Failed to save to Firebase:", err);
-    });
+    if (hasSyncedFromServer) {
+      const docRef = doc(firestoreDb, "db", "state");
+      setDoc(docRef, data).catch((err) => {
+        console.error("Failed to save to Firebase:", err);
+      });
+    } else {
+      console.warn("setDB buffered locally; Firebase sync is still in progress.");
+    }
   }
 };
 
@@ -191,7 +210,36 @@ export function useDB() {
   return db;
 }
 
+// Hook to check if DB has finished syncing from Firestore
+export function useDBReady() {
+  const [ready, setReady] = useState(hasSyncedFromServer);
+
+  useEffect(() => {
+    if (hasSyncedFromServer) {
+      setReady(true);
+      return;
+    }
+
+    const handleInitComplete = () => {
+      setReady(true);
+    };
+
+    window.addEventListener("db-init-complete", handleInitComplete);
+    return () => {
+      window.removeEventListener("db-init-complete", handleInitComplete);
+    };
+  }, []);
+
+  return ready;
+}
+
 export const addLog = (user_id: string, aktivitas: string, lokasi?: string) => {
+  // Prevent adding startup logs before we actually sync the online database
+  if (!hasSyncedFromServer) {
+    console.warn("addLog skipped because database is not synced yet:", aktivitas);
+    return;
+  }
+  
   const db = getDB();
   const log: LogAktivitas = {
     log_id: uuidv4(),
