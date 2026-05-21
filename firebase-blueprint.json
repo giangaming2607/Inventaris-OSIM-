@@ -1,0 +1,24 @@
+{
+    "entities": {
+        "DatabaseState": {
+            "title": "DatabaseState",
+            "description": "The complete database state of the application",
+            "type": "object",
+            "properties": {
+                "users": { "type": "array" },
+                "kategori": { "type": "array" },
+                "inventaris": { "type": "array" },
+                "peminjaman": { "type": "array" },
+                "pengembalian": { "type": "array" },
+                "log_aktivitas": { "type": "array" },
+                "settings": { "type": "object" }
+            }
+        }
+    },
+    "firestore": {
+        "db/state": {
+            "schema": "DatabaseState",
+            "description": "Singleton document storing the application's entire database"
+        }
+    }
+}

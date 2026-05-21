@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { DatabaseSchema, LogAktivitas, User } from "../types";
 import { v4 as uuidv4 } from "uuid";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { db as firestoreDb } from "./firebase";
 
 const defaultData: DatabaseSchema = {
   users: [
@@ -110,28 +112,34 @@ function computeHash(obj: any): string {
   }
 }
 
+let isListeningToFirebase = false;
+
 // Function to pull latest DB from backend server asynchronously
 export async function syncFromServer() {
+  if (typeof window === "undefined" || isListeningToFirebase) return;
+  isListeningToFirebase = true;
+
   try {
-    const res = await fetch("/api/db");
-    if (res.ok) {
-      const contentType = res.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data: DatabaseSchema = await res.json();
+    const docRef = doc(firestoreDb, "db", "state");
+    onSnapshot(docRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as DatabaseSchema;
         const currentHash = computeHash(data);
         if (currentHash !== lastHash) {
           cachedDB = data;
           lastHash = currentHash;
-          if (typeof window !== 'undefined') {
-            localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
-            // Notify React components to trigger re-renders
-            window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
-          }
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+          window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
         }
+      } else {
+        // Init if not exists
+        setDoc(docRef, cachedDB).catch(console.error);
       }
-    }
+    }, (err) => {
+      console.error("Firebase sync error", err);
+    });
   } catch (error) {
-    console.error("Failed to sync database from server:", error);
+    console.error("Failed to connect to Firebase:", error);
   }
 }
 
@@ -139,8 +147,6 @@ export async function syncFromServer() {
 if (typeof window !== "undefined") {
   // Sync immediately on script load
   syncFromServer();
-  // Poll every 3 seconds to push and check updates across multi-device
-  setInterval(syncFromServer, 3000);
 }
 
 // Synchronous getter for views
@@ -157,16 +163,13 @@ export const setDB = (data: DatabaseSchema) => {
     window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
   }
 
-  // Post changes asynchronously with retry/fail tolerance
-  fetch("/api/db", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(data)
-  }).catch((err) => {
-    console.error("Failed to save database to server:", err);
-  });
+  // Save to Firebase
+  if (typeof window !== 'undefined') {
+    const docRef = doc(firestoreDb, "db", "state");
+    setDoc(docRef, data).catch((err) => {
+      console.error("Failed to save to Firebase:", err);
+    });
+  }
 };
 
 // Custom hook for components to bind reactively to DB changes
