@@ -8,10 +8,11 @@ import { Search, Undo2, AlertCircle, Camera, CheckCircle2, RotateCw } from 'luci
 import { getDB, setDB, addLog } from '../lib/storage';
 import { Inventaris, Peminjaman, Pengembalian, User, KondisiBarang } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { formatDate } from '../lib/utils';
+import { formatDate, compressImage } from '../lib/utils';
 import { differenceInDays } from 'date-fns';
 import { useRef } from 'react';
 import { toast } from 'sonner';
+import { triggerResultPopup } from '../components/ui/ResultPopup';
 
 export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: User, initialTab?: 'pending' | 'history' }) {
   const [peminjaman, setPeminjaman] = useState<Peminjaman[]>([]);
@@ -65,13 +66,31 @@ export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: 
     setKondisi(b?.kondisi || 'Baik');
     setCatatan('');
     setFoto(null);
-    setLokasiFoto('');
+    setLokasiFoto('Mengambil lokasi GPS...');
+    
+    // Auto-fetch GPS on opening the modal
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          setLokasiFoto(`Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`);
+        },
+        (error) => {
+          setLokasiFoto('Lokasi tidak diizinkan');
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+      );
+    } else {
+      setLokasiFoto('Lokasi tidak didukung');
+    }
+    
     setIsModalOpen(true);
   };
 
   const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setLokasiFoto('Mengambil lokasi GPS dari foto...');
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
@@ -80,17 +99,21 @@ export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: 
           },
           (error) => {
             setLokasiFoto('Lokasi tidak diizinkan');
-          }
+          },
+          { enableHighAccuracy: true, timeout: 5000 }
         );
       } else {
         setLokasiFoto('Lokasi tidak didukung');
       }
 
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setFoto(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      compressImage(file, 400, 400, 0.7)
+        .then((base64String) => {
+          setFoto(base64String);
+        })
+        .catch((error) => {
+          console.error("Failed to compress return photo", error);
+          toast.error("Gagal memproses/kompres foto pengembalian.");
+        });
     }
   };
 
@@ -135,7 +158,7 @@ export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: 
     setDB(db);
     loadData();
     setIsModalOpen(false);
-    toast.success('Barang berhasil dikembalikan', { duration: 1000 });
+    triggerResultPopup('success', 'Dikembalikan', 'Barang berhasil dikembalikan!', 1000);
   };
 
   const activeLoans = peminjaman.filter(p => p.status === 'Dipinjam');
@@ -318,12 +341,24 @@ export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: 
 
       <Modal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+        onClose={() => {
+          setIsModalOpen(false);
+          setFoto(null);
+          setLokasiFoto('');
+        }} 
         title="Form Pengembalian Barang"
         footer={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsModalOpen(false)}>Batal</Button>
-            <Button variant="primary" onClick={handleReturn} disabled={!foto}>
+            <Button variant="outline" onClick={() => {
+              setIsModalOpen(false);
+              setFoto(null);
+              setLokasiFoto('');
+            }}>Batal</Button>
+            <Button 
+              variant="primary" 
+              onClick={handleReturn} 
+              disabled={!foto || !lokasiFoto || lokasiFoto === 'Mengambil lokasi GPS...' || lokasiFoto.startsWith('Lokasi tidak')}
+            >
               Konfirmasi Pengembalian
             </Button>
           </div>
@@ -401,8 +436,47 @@ export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: 
                 capture="environment"
                 onChange={handleFotoUpload}
               />
-              {!foto && <p className="text-xs text-red-500 mt-2 font-medium">Foto pengembalian wajib diunggah.</p>}
-              {lokasiFoto && <p className="text-xs text-neutral-400 mt-1 font-mono">{lokasiFoto}</p>}
+              {!foto && <p className="text-xs text-red-500 mt-2 font-medium">Foto pengembalian wajib diunggah atau diambil langsung!</p>}
+              
+              <div className="mt-4 p-3.5 bg-neutral-950 rounded-xl border border-neutral-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-neutral-400 font-semibold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    Koordinat GPS Pengembalian:
+                  </span>
+                  <span className="text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/15">
+                    Otomatis Locked
+                  </span>
+                </div>
+                
+                {lokasiFoto === 'Mengambil lokasi GPS...' || lokasiFoto === 'Mengambil lokasi GPS dari foto...' ? (
+                  <div className="flex items-center gap-2 text-xs text-neutral-400 py-1 font-medium">
+                    <div className="w-3.5 h-3.5 border-2 border-t-transparent border-blue-500 rounded-full animate-spin" />
+                    <span>Mendeteksi koordinat GPS satelit...</span>
+                  </div>
+                ) : !lokasiFoto ? (
+                  <p className="text-xs text-neutral-500 italic py-1">Memproses perizinan GPS perangkat...</p>
+                ) : lokasiFoto.startsWith('Lokasi tidak') ? (
+                  <div className="space-y-1">
+                    <p className="text-xs text-red-400 font-medium flex items-center gap-1.5 py-0.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500" />
+                      Gagal: {lokasiFoto === 'Lokasi tidak diizinkan' ? 'Akses GPS Ditolak' : 'Akses GPS Tidak Didukung'}
+                    </p>
+                    <p className="text-[10px] text-red-400/80 leading-relaxed max-w-sm">
+                      * Harap aktifkan GPS & berikan izin akses lokasi pada browser Anda untuk memverifikasi lokasi pengembalian secara sah.
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-xs text-emerald-400 font-mono font-bold flex items-center gap-1.5 bg-emerald-500/5 px-2 py-1.5 rounded border border-emerald-500/15">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                    {lokasiFoto}
+                  </p>
+                )}
+                
+                <p className="text-[10px] text-neutral-500 leading-relaxed italic border-t border-neutral-800/60 pt-2">
+                  * Untuk menjamin kejujuran, koordinat lokasi GPS ditentukan otomatis oleh satelit dan tidak bisa diketik atau disetel manual.
+                </p>
+              </div>
             </div>
           </div>
         )}

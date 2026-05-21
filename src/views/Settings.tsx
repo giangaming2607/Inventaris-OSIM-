@@ -3,6 +3,8 @@ import { getDB, setDB, useDB } from '../lib/storage';
 import { ImagePlus, Save } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { toast } from 'sonner';
+import { triggerResultPopup } from '../components/ui/ResultPopup';
+import { compressImage } from '../lib/utils';
 
 export function Settings() {
   const dbState = useDB();
@@ -22,17 +24,19 @@ export function Settings() {
   const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = reader.result as string;
-        setLogo(base64String);
-        
-        const db = getDB();
-        db.settings = { ...db.settings, logo: base64String };
-        setDB(db);
-        toast.success('Logo berhasil disimpan', { duration: 1000 });
-      };
-      reader.readAsDataURL(file);
+      compressImage(file, 240, 240, 0.8)
+        .then((base64String) => {
+          setLogo(base64String);
+          
+          const db = getDB();
+          db.settings = { ...db.settings, logo: base64String };
+          setDB(db);
+          triggerResultPopup('success', 'Logo Disimpan', 'Logo aplikasi berhasil diperbarui!', 1000);
+        })
+        .catch((error) => {
+          console.error("Failed to compress logo image", error);
+          toast.error("Gagal memproses gambar logo.");
+        });
     }
   };
 
@@ -44,7 +48,7 @@ export function Settings() {
       login_subtitle: loginSubtitle
     };
     setDB(db);
-    toast.success('Teks pengaturan berhasil disimpan', { duration: 1000 });
+    triggerResultPopup('success', 'Pengaturan Disimpan', 'Teks pengaturan berhasil disimpan!', 1000);
   };
 
   return (

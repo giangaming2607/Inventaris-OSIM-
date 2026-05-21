@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getDB, useDB } from '../lib/storage';
 import { User } from '../types';
 import { toast } from 'sonner';
+import { triggerResultPopup } from '../components/ui/ResultPopup';
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -21,13 +22,19 @@ export function Login({ onLogin, onCancel }: LoginProps) {
     e.preventDefault();
     const currentDb = getDB();
     
-    const user = currentDb.users.find(u => u.username === username);
+    // Find user (we find by exact matching or case-insensitive)
+    const normalizedUsername = username.trim().toLowerCase();
+    const user = currentDb.users.find(u => u.username.toLowerCase() === normalizedUsername);
     
-    if (user && user.password === password) {
-      toast.success('Login berhasil!', { duration: 1000 });
-      onLogin(user);
+    if (!user) {
+      triggerResultPopup('error', 'Login Gagal', 'Username yang Anda masukkan tidak terdaftar.', 2000);
+    } else if (user.password !== password) {
+      triggerResultPopup('error', 'Login Gagal', 'Password yang Anda masukkan salah.', 2000);
+    } else if (user.status !== 'Aktif') {
+      triggerResultPopup('error', 'Login Gagal', 'Status akun Anda saat ini sedang tidak aktif.', 2000);
     } else {
-      toast.error('Username atau password salah.', { duration: 1000 });
+      triggerResultPopup('success', 'Login Berhasil', 'Selamat datang di Ruang Admin OSIS!', 1000);
+      onLogin(user);
     }
   };
 

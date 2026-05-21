@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { generateKodeBarang, formatDate } from '../lib/utils';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { triggerResultPopup } from '../components/ui/ResultPopup';
 
 export function Inventory({ currentUser }: { currentUser: User }) {
   const [items, setItems] = useState<Inventaris[]>([]);
@@ -81,7 +82,7 @@ export function Inventory({ currentUser }: { currentUser: User }) {
           : i
       );
       addLog(currentUser.user_id, `Mengubah data barang: ${formData.nama_barang}`);
-      toast.success('Data barang berhasil diubah!', { duration: 1000 });
+      triggerResultPopup('success', 'Berhasil Disimpan', 'Data barang berhasil diubah!', 1000);
     } else {
       const newItem: Inventaris = {
         barang_id: uuidv4(),
@@ -92,7 +93,7 @@ export function Inventory({ currentUser }: { currentUser: User }) {
       };
       db.inventaris.push(newItem);
       addLog(currentUser.user_id, `Menambahkan barang baru: ${formData.nama_barang}`);
-      toast.success('Barang baru berhasil ditambahkan!', { duration: 1000 });
+      triggerResultPopup('success', 'Berhasil Ditambahkan', 'Barang baru berhasil ditambahkan!', 1000);
     }
     setDB(db);
     loadData();

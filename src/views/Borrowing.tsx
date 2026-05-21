@@ -4,13 +4,14 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
-import { Plus, Search, Calendar, ChevronRight, RotateCw } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronRight, RotateCw, AlertCircle } from 'lucide-react';
 import { getDB, setDB, addLog } from '../lib/storage';
 import { Inventaris, Peminjaman, User, StatusPeminjaman } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { formatDate } from '../lib/utils';
 import { differenceInDays } from 'date-fns';
 import { toast } from 'sonner';
+import { triggerResultPopup } from '../components/ui/ResultPopup';
 
 export function Borrowing({ currentUser }: { currentUser: User }) {
   const [peminjaman, setPeminjaman] = useState<Peminjaman[]>([]);
@@ -108,7 +109,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
       jumlah_pinjam: jumlah,
       tanggal_pinjam: new Date().toISOString(),
       tanggal_kembali: new Date(tglKembali).toISOString(),
-      status: 'Menunggu',
+      status: 'Dipinjam',
       catatan
     };
 
@@ -123,14 +124,30 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
     setDB(db);
     loadData();
     setIsModalOpen(false);
-    toast.success('Peminjaman berhasil diajukan', { duration: 1000 });
+    triggerResultPopup('success', 'Peminjaman Aktif', 'Peminjaman berhasil! Silakan lapor ke Ketua Divisi.', 2500);
   };
 
   const getStatusBadge = (status: StatusPeminjaman) => {
     switch(status) {
-      case 'Dipinjam': return <Badge variant="warning">Sedang Dipinjam</Badge>;
+      case 'Dipinjam': 
+        return (
+          <div className="flex flex-col gap-1 items-start">
+            <Badge variant="warning">Sedang Dipinjam</Badge>
+            <span className="text-[10px] text-amber-500 font-semibold bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20 leading-none">
+              Lapor ke Ketua Divisi
+            </span>
+          </div>
+        );
       case 'Dikembalikan': return <Badge variant="success">Dikembalikan</Badge>;
-      case 'Menunggu': return <Badge variant="info">Menunggu Approv</Badge>;
+      case 'Menunggu': 
+        return (
+          <div className="flex flex-col gap-1 items-start">
+            <Badge variant="info">Menunggu Approv</Badge>
+            <span className="text-[10px] text-blue-400 font-semibold bg-blue-500/10 px-1.5 py-0.5 rounded border border-blue-500/20 leading-none">
+              Lapor ke Ketua Divisi
+            </span>
+          </div>
+        );
       default: return <Badge>{status}</Badge>;
     }
   };
@@ -174,6 +191,17 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
           <Button onClick={handleOpenModal} className="flex items-center gap-2">
             <Plus className="w-4 h-4" /> Ajukan Peminjaman
           </Button>
+        </div>
+      </div>
+
+      {/* Visual Instruction Banner */}
+      <div className="bg-amber-500/10 border border-amber-500/25 text-amber-400 p-4 rounded-xl flex items-start gap-3 shadow-lg shadow-amber-500/5">
+        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-amber-500" />
+        <div>
+          <h4 className="text-sm font-semibold text-amber-200">Petunjuk Konfirmasi Fisik</h4>
+          <p className="text-xs text-neutral-400 mt-1 leading-relaxed">
+            Setelah menekan <strong className="text-white">"Ajukan Peminjaman"</strong>, status barang Anda akan langsung aktif (Sedang Dipinjam). Silakan langsung <strong className="text-amber-300">lapor ke Ketua Divisi</strong> (atau tunjukkan halaman ini) guna serah-terima/pengambilan barang secara fisik.
+          </p>
         </div>
       </div>
 

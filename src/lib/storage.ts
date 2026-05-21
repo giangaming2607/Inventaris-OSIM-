@@ -133,8 +133,16 @@ export async function syncFromServer() {
           window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
         }
       } else {
-        // Init if not exists with client's cached/default data
-        setDoc(docRef, cachedDB).catch(console.error);
+        // Prevent empty guest browsers from overwriting a blank state in Firestore
+        const isModified = cachedDB.inventaris.length !== defaultData.inventaris.length || 
+                           cachedDB.settings?.logo !== undefined ||
+                           cachedDB.users.length !== defaultData.users.length ||
+                           cachedDB.peminjaman.length > 0;
+        if (isModified) {
+          setDoc(docRef, cachedDB).catch(console.error);
+        } else {
+          console.log("Firestore state does not exist yet; skipping blank init on guest device.");
+        }
       }
       
       if (!hasSyncedFromServer) {

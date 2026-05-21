@@ -10,6 +10,7 @@ import { User, Role, Status } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { formatDateTime } from '../lib/utils';
 import { toast } from 'sonner';
+import { triggerResultPopup } from '../components/ui/ResultPopup';
 
 export function Users() {
   const [users, setUsers] = useState<User[]>([]);
@@ -57,7 +58,7 @@ export function Users() {
         return u;
       });
       addLog('admin-1', `Mengubah pengguna: ${formData.nama}`);
-      toast.success('Data pengguna berhasil diubah', { duration: 1000 });
+      triggerResultPopup('success', 'Berhasil Diubah', 'Data pengguna berhasil diubah!', 1000);
     } else {
       const newUser: User = {
         user_id: uuidv4(),
@@ -70,7 +71,7 @@ export function Users() {
       };
       db.users.push(newUser);
       addLog('admin-1', `Menambahkan pengguna baru: ${formData.nama}`);
-      toast.success('Pengguna baru berhasil ditambahkan', { duration: 1000 });
+      triggerResultPopup('success', 'Berhasil Ditambahkan', 'Pengguna baru berhasil ditambahkan!', 1000);
     }
     setDB(db);
     loadData();

@@ -13,6 +13,7 @@ import { Reports } from './views/Reports';
 import { Settings } from './views/Settings';
 import { GantiUI } from './views/GantiUI';
 import { Toaster } from 'sonner';
+import { ResultPopup } from './components/ui/ResultPopup';
 import { getActiveTheme, applyTheme } from './lib/theme';
 
 export default function App() {
@@ -155,6 +156,7 @@ export default function App() {
   return (
     <>
       <Toaster position="bottom-center" duration={3000} />
+      <ResultPopup />
       <Layout 
         currentView={currentView} 
         onNavigate={setCurrentView} 
