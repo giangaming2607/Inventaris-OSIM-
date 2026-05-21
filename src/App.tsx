@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { User } from './types';
-import { getDB, setCurrentUser } from './lib/storage';
+import { getDB, setCurrentUser, addLog } from './lib/storage';
 import { Layout } from './components/layout/Layout';
 import { Login } from './views/Login';
 import { Dashboard } from './views/Dashboard';
@@ -13,7 +13,6 @@ import { Reports } from './views/Reports';
 import { Settings } from './views/Settings';
 
 export default function App() {
-  const [currentView, setCurrentView] = useState('dashboard');
   const [user, setUser] = useState<User | null>(() => {
     if (typeof window !== 'undefined') {
       const savedUser = localStorage.getItem('osim_current_user');
@@ -31,7 +30,19 @@ export default function App() {
     }
     return null;
   });
+  const [currentView, setCurrentView] = useState(user ? 'dashboard' : 'borrowing');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  const guestUser: User = {
+    user_id: 'guest',
+    nama: 'Pengunjung',
+    username: 'guest',
+    role: 'Peminjam',
+    status: 'Aktif',
+    created_at: new Date().toISOString()
+  };
+
+  const activeUser = user || guestUser;
 
   const handleLogin = (user: User) => {
     setUser(user);
@@ -40,6 +51,20 @@ export default function App() {
       localStorage.setItem('osim_current_user', JSON.stringify(user));
     }
     setCurrentView('dashboard');
+    
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+          addLog(user.user_id, 'Login ke sistem', `Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`);
+        },
+        (error) => {
+          addLog(user.user_id, 'Login ke sistem', 'Lokasi tidak tersedia');
+        }
+      );
+    } else {
+      addLog(user.user_id, 'Login ke sistem', 'Perangkat tidak mendukung lokasi');
+    }
   };
 
   const handleLogout = () => {
@@ -47,24 +72,25 @@ export default function App() {
     if (typeof window !== 'undefined') {
       localStorage.removeItem('osim_current_user');
     }
-    setCurrentView('dashboard');
+    setCurrentView('borrowing');
   };
 
-  if (!user) {
-    return <Login onLogin={handleLogin} />;
+  if (currentView === 'login') {
+    return <Login onLogin={handleLogin} onCancel={() => setCurrentView('borrowing')} />;
   }
 
   const renderView = () => {
     switch (currentView) {
-      case 'dashboard': return <Dashboard />;
-      case 'inventory': return <Inventory currentUser={user} />;
-      case 'categories': return user.role === 'Admin' ? <Categories /> : <Dashboard />;
-      case 'borrowing': return <Borrowing currentUser={user} />;
-      case 'returns': return <Returns currentUser={user} />;
-      case 'users': return user.role === 'Admin' ? <Users /> : <Dashboard />;
-      case 'reports': return user.role === 'Admin' ? <Reports /> : <Dashboard />;
-      case 'settings': return user.role === 'Admin' ? <Settings /> : <Dashboard />;
-      default: return <Dashboard />;
+      case 'dashboard': return activeUser.role !== 'Peminjam' ? <Dashboard /> : <Borrowing currentUser={activeUser} />;
+      case 'inventory': return activeUser.role !== 'Peminjam' ? <Inventory currentUser={activeUser} /> : <Borrowing currentUser={activeUser} />;
+      case 'categories': return activeUser.role === 'Admin' ? <Categories /> : <Borrowing currentUser={activeUser} />;
+      case 'borrowing': return <Borrowing currentUser={activeUser} />;
+      case 'returns': return <Returns currentUser={activeUser} initialTab="pending" />;
+      case 'history': return <Returns currentUser={activeUser} initialTab="history" />;
+      case 'users': return activeUser.role === 'Admin' ? <Users /> : <Borrowing currentUser={activeUser} />;
+      case 'reports': return activeUser.role === 'Admin' ? <Reports /> : <Borrowing currentUser={activeUser} />;
+      case 'settings': return activeUser.role === 'Admin' ? <Settings /> : <Borrowing currentUser={activeUser} />;
+      default: return <Borrowing currentUser={activeUser} />;
     }
   };
 
@@ -72,7 +98,7 @@ export default function App() {
     <Layout 
       currentView={currentView} 
       onNavigate={setCurrentView} 
-      currentUser={user} 
+      currentUser={activeUser} 
       onLogout={handleLogout}
       isSidebarOpen={isSidebarOpen}
       toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}

@@ -191,13 +191,14 @@ export function useDB() {
   return db;
 }
 
-export const addLog = (user_id: string, aktivitas: string) => {
+export const addLog = (user_id: string, aktivitas: string, lokasi?: string) => {
   const db = getDB();
   const log: LogAktivitas = {
     log_id: uuidv4(),
     user_id,
     waktu: new Date().toISOString(),
-    aktivitas
+    aktivitas,
+    lokasi
   };
   db.log_aktivitas.unshift(log);
   if (db.log_aktivitas.length > 100) {

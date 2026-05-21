@@ -28,17 +28,21 @@ export function Header({ currentUser, onLogout, toggleSidebar }: HeaderProps) {
         <div className="flex items-center space-x-4 border-l border-neutral-800 pl-6">
           <div className="flex flex-col items-end">
             <span className="text-sm font-medium text-white">{currentUser.nama}</span>
-            <span className="text-xs text-neutral-500">Role: {currentUser.role}</span>
+            <span className="text-xs text-neutral-500">
+              {currentUser.role === 'Peminjam' ? 'Tamu' : `Role: ${currentUser.role}`}
+            </span>
           </div>
           <UserCircle className="w-9 h-9 text-neutral-700" />
           
-          <button 
-            onClick={onLogout}
-            className="flex items-center justify-center p-2 text-neutral-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors ml-2"
-            title="Keluar"
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+          {currentUser.role !== 'Peminjam' && (
+            <button 
+              onClick={onLogout}
+              className="flex items-center justify-center p-2 text-neutral-400 hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-colors ml-2"
+              title="Keluar"
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
     </header>

@@ -1,4 +1,4 @@
-export type Role = 'Admin' | 'Pengurus';
+export type Role = 'Admin' | 'Pengurus' | 'Peminjam';
 export type Status = 'Aktif' | 'Nonaktif';
 export type KondisiBarang = 'Baik' | 'Rusak Ringan' | 'Rusak Berat';
 export type StatusPeminjaman = 'Menunggu' | 'Dipinjam' | 'Dikembalikan';
@@ -58,6 +58,7 @@ export interface LogAktivitas {
   user_id: string;
   aktivitas: string;
   waktu: string;
+  lokasi?: string;
 }
 
 export interface AppSettings {

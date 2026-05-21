@@ -22,6 +22,7 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
   const [jumlah, setJumlah] = useState(1);
   const [tglKembali, setTglKembali] = useState('');
   const [catatan, setCatatan] = useState('');
+  const [namaPeminjam, setNamaPeminjam] = useState('');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,12 +46,18 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
     setJumlah(1);
     setTglKembali('');
     setCatatan('');
+    setNamaPeminjam('');
     setIsModalOpen(true);
   };
 
   const handleAjukan = () => {
     if (!selectedBarang || !tglKembali || jumlah <= 0) {
       alert('Harap lengkapi formular peminjaman.');
+      return;
+    }
+
+    if (currentUser.role === 'Peminjam' && !namaPeminjam.trim()) {
+      alert('Harap masukkan nama peminjam.');
       return;
     }
 
@@ -64,16 +71,33 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
       return;
     }
 
-    // Auto approv logic for simplicity, status dipinjam and deduct stock immediately.
-    // Real strict system might need 'Menunggu' state and Admin approval.
+    let actualUserId = currentUser.user_id;
+
+    if (currentUser.role === 'Peminjam') {
+      // Find or create a temporary user for this name
+      let tempUser = db.users.find(u => u.nama.toLowerCase() === namaPeminjam.toLowerCase() && u.role === 'Peminjam');
+      if (!tempUser) {
+        tempUser = {
+          user_id: uuidv4(),
+          nama: namaPeminjam,
+          username: `peminjam_${Date.now()}`,
+          role: 'Peminjam',
+          status: 'Aktif',
+          created_at: new Date().toISOString()
+        };
+        db.users.push(tempUser);
+      }
+      actualUserId = tempUser.user_id;
+    }
+
     const newPem: Peminjaman = {
       peminjaman_id: uuidv4(),
       barang_id: selectedBarang,
-      user_id: currentUser.user_id,
+      user_id: actualUserId,
       jumlah_pinjam: jumlah,
       tanggal_pinjam: new Date().toISOString(),
       tanggal_kembali: new Date(tglKembali).toISOString(),
-      status: 'Dipinjam',
+      status: 'Menunggu',
       catatan
     };
 
@@ -218,6 +242,14 @@ export function Borrowing({ currentUser }: { currentUser: User }) {
         }
       >
         <div className="space-y-5">
+           {currentUser.role === 'Peminjam' && (
+             <Input 
+               label="Nama Lengkap Peminjam" 
+               placeholder="Masukkan nama lengkap anda..."
+               value={namaPeminjam}
+               onChange={e => setNamaPeminjam(e.target.value)}
+             />
+           )}
            <div>
             <label className="block text-sm font-medium text-neutral-300 mb-1">Pilih Barang yang Tersedia</label>
             <select 

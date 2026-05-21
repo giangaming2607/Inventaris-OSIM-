@@ -1,6 +1,6 @@
 import { 
   Boxes, LayoutDashboard, Tags, ClipboardList, 
-  ArrowLeftRight, Users, FileBarChart, Settings 
+  ArrowLeftRight, Users, FileBarChart, Settings, History
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Role } from '../../types';
@@ -21,8 +21,9 @@ export function Sidebar({ currentView, onNavigate, userRole }: SidebarProps) {
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['Admin', 'Pengurus'] },
     { id: 'inventory', label: 'Inventaris', icon: Boxes, roles: ['Admin', 'Pengurus'] },
     { id: 'categories', label: 'Kategori', icon: Tags, roles: ['Admin'] },
-    { id: 'borrowing', label: 'Peminjaman', icon: ClipboardList, roles: ['Admin', 'Pengurus'] },
-    { id: 'returns', label: 'Pengembalian', icon: ArrowLeftRight, roles: ['Admin', 'Pengurus'] },
+    { id: 'borrowing', label: 'Peminjaman', icon: ClipboardList, roles: ['Admin', 'Pengurus', 'Peminjam'] },
+    { id: 'returns', label: 'Pengembalian', icon: ArrowLeftRight, roles: ['Admin', 'Pengurus', 'Peminjam'] },
+    { id: 'history', label: 'Riwayat', icon: History, roles: ['Admin', 'Pengurus', 'Peminjam'] },
     { id: 'users', label: 'Pengguna', icon: Users, roles: ['Admin'] },
     { id: 'reports', label: 'Laporan', icon: FileBarChart, roles: ['Admin'] },
     { id: 'settings', label: 'Pengaturan', icon: Settings, roles: ['Admin'] },
@@ -40,7 +41,7 @@ export function Sidebar({ currentView, onNavigate, userRole }: SidebarProps) {
         )}
         <span className="truncate">{loginTitle}</span>
       </div>
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto w-full">
         {visibleItems.map((item) => (
           <button
             key={item.id}
@@ -56,6 +57,16 @@ export function Sidebar({ currentView, onNavigate, userRole }: SidebarProps) {
             {item.label}
           </button>
         ))}
+
+        {userRole === 'Peminjam' && (
+          <button
+            onClick={() => onNavigate('login')}
+            className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-neutral-800 hover:text-white mt-4 text-blue-400"
+          >
+            <Users className="w-5 h-5 mr-3 opacity-70" />
+            Login Admin
+          </button>
+        )}
       </nav>
     </aside>
   );

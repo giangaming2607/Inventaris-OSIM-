@@ -4,9 +4,10 @@ import { User } from '../types';
 
 interface LoginProps {
   onLogin: (user: User) => void;
+  onCancel?: () => void;
 }
 
-export function Login({ onLogin }: LoginProps) {
+export function Login({ onLogin, onCancel }: LoginProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -75,12 +76,23 @@ export function Login({ onLogin }: LoginProps) {
             />
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#050505] focus:ring-blue-500 text-sm"
-          >
-            Masuk
-          </button>
+          <div className="flex gap-3">
+            {onCancel && (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="w-1/3 bg-neutral-800 text-neutral-300 py-2 px-4 rounded-lg font-medium hover:bg-neutral-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#050505] focus:ring-neutral-500 text-sm"
+              >
+                Kembali
+              </button>
+            )}
+            <button
+              type="submit"
+              className={`${onCancel ? 'w-2/3' : 'w-full'} bg-blue-600 text-white py-2 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#050505] focus:ring-blue-500 text-sm`}
+            >
+              Masuk
+            </button>
+          </div>
         </form>
       </div>
       

@@ -4,7 +4,7 @@ import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { Badge } from '../components/ui/Badge';
-import { Search, Undo2, AlertCircle, Camera } from 'lucide-react';
+import { Search, Undo2, AlertCircle, Camera, CheckCircle2 } from 'lucide-react';
 import { getDB, setDB, addLog } from '../lib/storage';
 import { Inventaris, Peminjaman, Pengembalian, User, KondisiBarang } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -12,18 +12,24 @@ import { formatDate } from '../lib/utils';
 import { differenceInDays } from 'date-fns';
 import { useRef } from 'react';
 
-export function Returns({ currentUser }: { currentUser: User }) {
+export function Returns({ currentUser, initialTab = 'pending' }: { currentUser: User, initialTab?: 'pending' | 'history' }) {
   const [peminjaman, setPeminjaman] = useState<Peminjaman[]>([]);
   const [inventaris, setInventaris] = useState<Inventaris[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [pengembalian, setPengembalian] = useState<Pengembalian[]>([]);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pending' | 'history'>(initialTab);
   const [selectedPinjaman, setSelectedPinjaman] = useState<Peminjaman | null>(null);
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
   
   const [kondisi, setKondisi] = useState<KondisiBarang>('Baik');
   const [catatan, setCatatan] = useState('');
   const [foto, setFoto] = useState<string | null>(null);
+  const [lokasiFoto, setLokasiFoto] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [searchTerm, setSearchTerm] = useState('');
@@ -48,12 +54,27 @@ export function Returns({ currentUser }: { currentUser: User }) {
     setKondisi(b?.kondisi || 'Baik');
     setCatatan('');
     setFoto(null);
+    setLokasiFoto('');
     setIsModalOpen(true);
   };
 
   const handleFotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            setLokasiFoto(`Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`);
+          },
+          (error) => {
+            setLokasiFoto('Lokasi tidak diizinkan');
+          }
+        );
+      } else {
+        setLokasiFoto('Lokasi tidak didukung');
+      }
+
       const reader = new FileReader();
       reader.onloadend = () => {
         setFoto(reader.result as string);
@@ -98,7 +119,7 @@ export function Returns({ currentUser }: { currentUser: User }) {
     });
 
     const b = db.inventaris.find(i => i.barang_id === selectedPinjaman.barang_id);
-    addLog(currentUser.user_id, `Mengembalikan alat: ${b?.nama_barang} (${selectedPinjaman.jumlah_pinjam} qty)`);
+    addLog(currentUser.user_id, `Mengembalikan alat: ${b?.nama_barang} (${selectedPinjaman.jumlah_pinjam} qty)`, lokasiFoto);
     
     setDB(db);
     loadData();
@@ -106,6 +127,10 @@ export function Returns({ currentUser }: { currentUser: User }) {
   };
 
   const activeLoans = peminjaman.filter(p => p.status === 'Dipinjam');
+  const pastReturns = pengembalian.map(ret => {
+    const p = peminjaman.find(pem => pem.peminjaman_id === ret.peminjaman_id);
+    return { ...ret, peminjaman: p };
+  }).filter(ret => ret.peminjaman !== undefined).sort((a,b) => new Date(b.tanggal_pengembalian).getTime() - new Date(a.tanggal_pengembalian).getTime());
   
   const filteredData = activeLoans.filter(p => {
     const b = inventaris.find(i => i.barang_id === p.barang_id);
@@ -114,13 +139,39 @@ export function Returns({ currentUser }: { currentUser: User }) {
     return searchString.includes(searchTerm.toLowerCase());
   }).sort((a,b) => new Date(a.tanggal_kembali).getTime() - new Date(b.tanggal_kembali).getTime()); // sort deadline soonest
 
+  const filteredHistory = pastReturns.filter(ret => {
+    const p = ret.peminjaman;
+    if (!p) return false;
+    const b = inventaris.find(i => i.barang_id === p.barang_id);
+    const u = users.find(u => u.user_id === p.user_id);
+    const searchString = `${b?.nama_barang || ''} ${u?.nama || ''}`.toLowerCase();
+    return searchString.includes(searchTerm.toLowerCase());
+  });
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl font-bold text-white">Pengembalian Barang</h2>
-          <p className="text-neutral-500 mt-1">Daftar barang yang sedang dipinjam dan perlu dikembalikan.</p>
+          <p className="text-neutral-500 mt-1">Daftar barang yang sedang dipinjam dan riwayat pengembalian.</p>
         </div>
+      </div>
+
+      <div className="flex gap-4 border-b border-neutral-800 pb-2">
+        <button
+          onClick={() => setActiveTab('pending')}
+          className={`px-4 py-2 font-medium text-sm transition-colors relative ${activeTab === 'pending' ? 'text-blue-500' : 'text-neutral-500 hover:text-neutral-300'}`}
+        >
+          Perlu Dikembalikan
+          {activeTab === 'pending' && <span className="absolute bottom-[-9px] left-0 right-0 h-[2px] bg-blue-500 rounded-t" />}
+        </button>
+        <button
+          onClick={() => setActiveTab('history')}
+          className={`px-4 py-2 font-medium text-sm transition-colors relative ${activeTab === 'history' ? 'text-blue-500' : 'text-neutral-500 hover:text-neutral-300'}`}
+        >
+          Riwayat Pengembalian
+          {activeTab === 'history' && <span className="absolute bottom-[-9px] left-0 right-0 h-[2px] bg-blue-500 rounded-t" />}
+        </button>
       </div>
 
       <Card>
@@ -130,7 +181,7 @@ export function Returns({ currentUser }: { currentUser: User }) {
               <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-600" />
               <Input 
                 className="pl-10" 
-                placeholder="Cari transaksi aktif..." 
+                placeholder={activeTab === 'pending' ? "Cari transaksi aktif..." : "Cari riwayat pengembalian..."} 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -142,18 +193,28 @@ export function Returns({ currentUser }: { currentUser: User }) {
                 <tr className="bg-neutral-900 border-b border-neutral-800">
                   <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Peminjam</th>
                   <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Barang & Qty</th>
-                  <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Tanggal Pinjam</th>
-                  <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Tenggat Kembali</th>
-                  <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500 text-right">Aksi</th>
+                  {activeTab === 'pending' ? (
+                    <>
+                      <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Tanggal Pinjam</th>
+                      <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Tenggat Kembali</th>
+                      <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500 text-right">Aksi</th>
+                    </>
+                  ) : (
+                    <>
+                      <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Kondisi Setelah</th>
+                      <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500">Waktu Dikembalikan</th>
+                      <th className="px-6 py-4 text-xs tracking-wider uppercase font-semibold text-neutral-500 text-right">Status</th>
+                    </>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-800">
-                {filteredData.map(p => {
+                {activeTab === 'pending' && filteredData.map(p => {
                   const b = inventaris.find(i => i.barang_id === p.barang_id);
                   const u = users.find(u => u.user_id === p.user_id);
                   const isLate = differenceInDays(new Date(), new Date(p.tanggal_kembali)) > 0;
-                  // Restrict users to only return their own items, unless they are Admin
-                  const canReturn = currentUser.role === 'Admin' || currentUser.user_id === p.user_id;
+                  // Allow Peminjam to return items, realistically they find their own name
+                  const canReturn = true;
                   
                   return (
                     <tr key={p.peminjaman_id} className={`hover:bg-[#111111] transition-colors ${isLate ? 'bg-red-900/10' : ''}`}>
@@ -183,10 +244,48 @@ export function Returns({ currentUser }: { currentUser: User }) {
                     </tr>
                   )
                 })}
-                {filteredData.length === 0 && (
+                {activeTab === 'pending' && filteredData.length === 0 && (
                   <tr>
                     <td colSpan={5} className="px-6 py-12 text-center text-neutral-500">
                       Tidak ada barang yang sedang dipinjam saat ini.
+                    </td>
+                  </tr>
+                )}
+                {activeTab === 'history' && filteredHistory.map(ret => {
+                  const p = ret.peminjaman!;
+                  const b = inventaris.find(i => i.barang_id === p.barang_id);
+                  const u = users.find(u => u.user_id === p.user_id);
+                  
+                  return (
+                    <tr key={ret.pengembalian_id} className="hover:bg-[#111111] transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-white">{u?.nama || 'Unknown'}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="font-medium text-white">{b?.nama_barang || 'Barang Dihapus'}</div>
+                        <div className="text-xs text-neutral-500">Jumlah: {p.jumlah_pinjam} unit</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-neutral-300">{ret.kondisi_setelah}</div>
+                        {ret.catatan_kerusakan && (
+                           <div className="text-xs text-amber-500 mt-1 max-w-[200px] truncate" title={ret.catatan_kerusakan}>Note: {ret.catatan_kerusakan}</div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-neutral-400">
+                         {formatDate(ret.tanggal_pengembalian)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-1 text-green-500 text-sm font-medium">
+                          <CheckCircle2 className="w-4 h-4" /> Selesai
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+                {activeTab === 'history' && filteredHistory.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-12 text-center text-neutral-500">
+                      Belum ada riwayat pengembalian.
                     </td>
                   </tr>
                 )}
@@ -273,7 +372,7 @@ export function Returns({ currentUser }: { currentUser: User }) {
                   </>
                 )}
               </div>
-              <input 
+               <input 
                 type="file" 
                 ref={fileInputRef} 
                 className="hidden" 
@@ -282,6 +381,7 @@ export function Returns({ currentUser }: { currentUser: User }) {
                 onChange={handleFotoUpload}
               />
               {!foto && <p className="text-xs text-red-500 mt-2 font-medium">Foto pengembalian wajib diunggah.</p>}
+              {lokasiFoto && <p className="text-xs text-neutral-400 mt-1 font-mono">{lokasiFoto}</p>}
             </div>
           </div>
         )}

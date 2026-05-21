@@ -106,7 +106,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-neutral-800 max-h-[352px] overflow-y-auto">
-              {db.log_aktivitas.slice(0, 10).map((log) => {
+              {db.log_aktivitas.filter(l => l.aktivitas !== 'Login ke sistem').slice(0, 10).map((log) => {
                 const user = db.users.find(u => u.user_id === log.user_id);
                 return (
                   <div key={log.log_id} className="p-4 hover:bg-[#111111] transition-colors">
@@ -118,8 +118,35 @@ export function Dashboard() {
                   </div>
                 );
               })}
-              {db.log_aktivitas.length === 0 && (
+              {db.log_aktivitas.filter(l => l.aktivitas !== 'Login ke sistem').length === 0 && (
                 <div className="p-8 text-center text-sm text-neutral-500">Belum ada aktivitas.</div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        <Card className="col-span-1 lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Aktivitas Login</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-neutral-800 max-h-[250px] overflow-y-auto">
+              {db.log_aktivitas.filter(l => l.aktivitas === 'Login ke sistem').slice(0, 10).map((log) => {
+                const user = db.users.find(u => u.user_id === log.user_id);
+                return (
+                  <div key={log.log_id} className="p-4 hover:bg-[#111111] transition-colors flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-white font-medium">{user?.nama || 'Unknown'} <span className="text-neutral-500 font-normal">({user?.role})</span></p>
+                      <p className="text-xs text-neutral-500 mt-1">Lokasi: {log.lokasi || 'Tidak diketahui'}</p>
+                    </div>
+                    <span className="text-xs text-neutral-600 font-mono">{formatDateTime(log.waktu)}</span>
+                  </div>
+                );
+              })}
+              {db.log_aktivitas.filter(l => l.aktivitas === 'Login ke sistem').length === 0 && (
+                <div className="p-8 text-center text-sm text-neutral-500">Belum ada aktivitas login.</div>
               )}
             </div>
           </CardContent>
