@@ -42,6 +42,27 @@ export default function App() {
     created_at: new Date().toISOString()
   };
 
+  useEffect(() => {
+    // Apabila user masih belum login atau saat aplikasi pertama kali dimuat,
+    // kita minta lokasi pengunjung.
+    if (!user && typeof window !== 'undefined') {
+      const hasGuestLoggedLocation = sessionStorage.getItem('osim_guest_location_logged');
+      if (!hasGuestLoggedLocation && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const { latitude, longitude } = position.coords;
+            addLog(guestUser.user_id, 'Akses sebagai pengunjung', `Lat: ${latitude.toFixed(5)}, Lng: ${longitude.toFixed(5)}`);
+            sessionStorage.setItem('osim_guest_location_logged', 'true');
+          },
+          (error) => {
+            addLog(guestUser.user_id, 'Akses sebagai pengunjung', 'Lokasi tidak diizinkan');
+            sessionStorage.setItem('osim_guest_location_logged', 'true');
+          }
+        );
+      }
+    }
+  }, [user]);
+
   const activeUser = user || guestUser;
 
   const handleLogin = (user: User) => {

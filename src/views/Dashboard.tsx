@@ -106,19 +106,41 @@ export function Dashboard() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-neutral-800 max-h-[352px] overflow-y-auto">
-              {db.log_aktivitas.filter(l => l.aktivitas !== 'Login ke sistem').slice(0, 10).map((log) => {
+              {db.log_aktivitas.filter(l => l.aktivitas !== 'Login ke sistem' && l.aktivitas !== 'Akses sebagai pengunjung').slice(0, 10).map((log) => {
                 const user = db.users.find(u => u.user_id === log.user_id);
+                
+                let lat = '', lng = '';
+                if (log.lokasi && log.lokasi.startsWith('Lat:')) {
+                   const parts = log.lokasi.replace('Lat: ', '').replace('Lng: ', '').split(', ');
+                   if (parts.length === 2) {
+                     lat = parts[0];
+                     lng = parts[1];
+                   }
+                }
+
                 return (
                   <div key={log.log_id} className="p-4 hover:bg-[#111111] transition-colors">
                     <p className="text-sm text-white font-medium">{log.aktivitas}</p>
                     <div className="flex justify-between items-center mt-1">
-                      <span className="text-xs text-neutral-500">{user?.nama || 'Unknown'}</span>
-                      <span className="text-xs text-neutral-600">{formatDateTime(log.waktu)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-neutral-500">{user?.nama || (log.user_id === 'guest' ? 'Pengunjung' : 'Unknown')}</span>
+                        {lat && lng && (
+                          <a 
+                            href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-500 hover:text-blue-400 font-medium bg-blue-500/10 px-2 py-0.5 rounded"
+                          >
+                            Lihat Lokasi
+                          </a>
+                        )}
+                      </div>
+                      <span className="text-xs text-neutral-600 font-mono">{formatDateTime(log.waktu)}</span>
                     </div>
                   </div>
                 );
               })}
-              {db.log_aktivitas.filter(l => l.aktivitas !== 'Login ke sistem').length === 0 && (
+              {db.log_aktivitas.filter(l => l.aktivitas !== 'Login ke sistem' && l.aktivitas !== 'Akses sebagai pengunjung').length === 0 && (
                 <div className="p-8 text-center text-sm text-neutral-500">Belum ada aktivitas.</div>
               )}
             </div>
@@ -129,24 +151,49 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         <Card className="col-span-1 lg:col-span-2">
           <CardHeader>
-            <CardTitle>Aktivitas Login</CardTitle>
+            <CardTitle>Aktivitas Login & Akses</CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="divide-y divide-neutral-800 max-h-[250px] overflow-y-auto">
-              {db.log_aktivitas.filter(l => l.aktivitas === 'Login ke sistem').slice(0, 10).map((log) => {
+              {db.log_aktivitas.filter(l => l.aktivitas === 'Login ke sistem' || l.aktivitas === 'Akses sebagai pengunjung').slice(0, 10).map((log) => {
                 const user = db.users.find(u => u.user_id === log.user_id);
+                const isGuest = log.user_id === 'guest';
+                
+                let lat = '', lng = '';
+                if (log.lokasi && log.lokasi.startsWith('Lat:')) {
+                   const parts = log.lokasi.replace('Lat: ', '').replace('Lng: ', '').split(', ');
+                   if (parts.length === 2) {
+                     lat = parts[0];
+                     lng = parts[1];
+                   }
+                }
+
                 return (
                   <div key={log.log_id} className="p-4 hover:bg-[#111111] transition-colors flex justify-between items-center">
                     <div>
-                      <p className="text-sm text-white font-medium">{user?.nama || 'Unknown'} <span className="text-neutral-500 font-normal">({user?.role})</span></p>
-                      <p className="text-xs text-neutral-500 mt-1">Lokasi: {log.lokasi || 'Tidak diketahui'}</p>
+                      <p className="text-sm text-white font-medium">{isGuest ? 'Pengunjung' : (user?.nama || 'Unknown')} <span className="text-neutral-500 font-normal">({isGuest ? 'Peminjam' : user?.role})</span></p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-neutral-500">Aktivitas: {log.aktivitas}</p>
+                        <span className="text-xs text-neutral-600">•</span>
+                        <p className="text-xs text-neutral-500">Lokasi: {log.lokasi || 'Tidak diketahui'}</p>
+                        {lat && lng && (
+                          <a 
+                            href={`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-xs text-blue-500 hover:text-blue-400 font-medium ml-2 bg-blue-500/10 px-2 py-0.5 rounded"
+                          >
+                            Lihat Lokasi
+                          </a>
+                        )}
+                      </div>
                     </div>
                     <span className="text-xs text-neutral-600 font-mono">{formatDateTime(log.waktu)}</span>
                   </div>
                 );
               })}
-              {db.log_aktivitas.filter(l => l.aktivitas === 'Login ke sistem').length === 0 && (
-                <div className="p-8 text-center text-sm text-neutral-500">Belum ada aktivitas login.</div>
+              {db.log_aktivitas.filter(l => l.aktivitas === 'Login ke sistem' || l.aktivitas === 'Akses sebagai pengunjung').length === 0 && (
+                <div className="p-8 text-center text-sm text-neutral-500">Belum ada aktivitas login/akses.</div>
               )}
             </div>
           </CardContent>
