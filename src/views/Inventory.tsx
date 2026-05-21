@@ -44,7 +44,7 @@ export function Inventory({ currentUser }: { currentUser: User }) {
     loadData(); 
     window.addEventListener('db-update', loadData);
     return () => window.removeEventListener('db-update', loadData);
-  }, [categories]);
+  }, []);
 
   const handleOpenModal = (item?: Inventaris) => {
     if (item) {
