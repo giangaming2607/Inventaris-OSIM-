@@ -1,12 +1,17 @@
 import { useState, useEffect } from 'react';
 import { 
   Palette, Check, Sparkles, Filter, Search, 
-  Layers, Circle, Eye, Sliders, CheckCircle2 
+  Layers, Circle, Eye, Sliders, CheckCircle2, ArrowLeft 
 } from 'lucide-react';
 import { UI_THEMES, UITheme, getActiveTheme, setActiveThemeId } from '../lib/theme';
 import { toast } from 'sonner';
+import { Button } from '../components/ui/Button';
 
-export function GantiUI() {
+interface GantiUIProps {
+  onBack?: () => void;
+}
+
+export function GantiUI({ onBack }: GantiUIProps) {
   const [activeTheme, setActiveTheme] = useState<UITheme>(() => getActiveTheme());
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('Semua');
@@ -60,6 +65,13 @@ export function GantiUI() {
     setTimeout(() => {
       document.documentElement.classList.remove('transition-all', 'duration-500');
     }, 500);
+
+    // Automatically navigate back to homepage/dashboard after setting theme
+    if (onBack) {
+      setTimeout(() => {
+        onBack();
+      }, 1200);
+    }
   };
 
   return (
@@ -75,9 +87,17 @@ export function GantiUI() {
             Ubah penampilan visual dan skema warna seluruh sistem Inventaris Sekretariat OSIM secara langsung.
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-neutral-900/50 border border-neutral-800 px-3 py-1.5 rounded-lg text-xs text-neutral-400 font-mono">
-          <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
-          <span>Tema Aktif: <strong className="text-white">{activeTheme.name}</strong></span>
+        <div className="flex items-center gap-3 self-start md:self-auto">
+          {onBack && (
+            <Button onClick={onBack} variant="outline" className="flex items-center gap-2 font-medium border-neutral-800 text-neutral-300 hover:text-white">
+              <ArrowLeft className="w-4 h-4" />
+              Kembali
+            </Button>
+          )}
+          <div className="flex items-center gap-2 bg-neutral-900/50 border border-neutral-800 px-3 py-1.5 rounded-lg text-xs text-neutral-400 font-mono">
+            <Sparkles className="w-4 h-4 text-yellow-500 animate-pulse" />
+            <span>Tema Aktif: <strong className="text-white">{activeTheme.name}</strong></span>
+          </div>
         </div>
       </div>
 

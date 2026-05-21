@@ -89,29 +89,52 @@ const loadInitialDB = (): DatabaseSchema => {
       try {
         const parsed = JSON.parse(local);
         if (parsed && typeof parsed === 'object' && Array.isArray(parsed.users)) {
-          return parsed;
+          return {
+            ...defaultData,
+            ...parsed
+          };
         }
       } catch (e) {
         console.error("Failed to parse local storage key", e);
       }
     }
   }
-  return defaultData;
+  return { ...defaultData };
 };
 
 // In-memory cache
 let cachedDB: DatabaseSchema = loadInitialDB();
-let lastHash = "";
 let hasSyncedFromServer = false;
 
-// Helper to compute a simple hash string to check for differences
+// Compute a string representation to check for actual edits
 function computeHash(obj: any): string {
   try {
-    return JSON.stringify(obj);
+    return JSON.stringify(obj || "");
   } catch (e) {
     return "";
   }
 }
+
+// Track independent hashes for each collection slice
+const lastHashes: { [key in keyof DatabaseSchema]?: string } = {
+  users: computeHash(cachedDB.users),
+  kategori: computeHash(cachedDB.kategori),
+  inventaris: computeHash(cachedDB.inventaris),
+  peminjaman: computeHash(cachedDB.peminjaman),
+  pengembalian: computeHash(cachedDB.pengembalian),
+  log_aktivitas: computeHash(cachedDB.log_aktivitas),
+  settings: computeHash(cachedDB.settings)
+};
+
+const dbKeys: Array<keyof DatabaseSchema> = [
+  "users",
+  "kategori",
+  "inventaris",
+  "peminjaman",
+  "pengembalian",
+  "log_aktivitas",
+  "settings"
+];
 
 let isListeningToFirebase = false;
 
@@ -120,55 +143,52 @@ export async function syncFromServer() {
   if (typeof window === "undefined" || isListeningToFirebase) return;
   isListeningToFirebase = true;
 
-  try {
-    const docRef = doc(firestoreDb, "db", "state");
+  const syncedKeys = new Set<string>();
+
+  dbKeys.forEach((key) => {
+    const docRef = doc(firestoreDb, "db", key);
+    
     onSnapshot(docRef, (snapshot) => {
       if (snapshot.exists()) {
-        const data = snapshot.data() as DatabaseSchema;
-        const currentHash = computeHash(data);
-        if (currentHash !== lastHash) {
-          cachedDB = data;
-          lastHash = currentHash;
-          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+        const snapData = snapshot.data();
+        // Extract array/object representing the collection
+        const val = snapData && snapData.data !== undefined ? snapData.data : snapData;
+        const currentHash = computeHash(val);
+        
+        if (currentHash !== lastHashes[key]) {
+          (cachedDB as any)[key] = val;
+          lastHashes[key] = currentHash;
+          
+          localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cachedDB));
           window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
         }
       } else {
-        // Prevent empty guest browsers from overwriting a blank state in Firestore
-        const isModified = cachedDB.inventaris.length !== defaultData.inventaris.length || 
-                           cachedDB.settings?.logo !== undefined ||
-                           cachedDB.users.length !== defaultData.users.length ||
-                           cachedDB.peminjaman.length > 0;
-        if (isModified) {
-          setDoc(docRef, cachedDB).catch(console.error);
-        } else {
-          console.log("Firestore state does not exist yet; skipping blank init on guest device.");
-        }
+        // Initialize the Firestore document with default or currently stored local data if it doesn't exist
+        const defaultVal = cachedDB[key];
+        setDoc(docRef, { data: defaultVal }).catch(console.error);
+        lastHashes[key] = computeHash(defaultVal);
       }
-      
-      if (!hasSyncedFromServer) {
+
+      // Mark this key as synced
+      syncedKeys.add(key);
+      if (syncedKeys.size === dbKeys.length && !hasSyncedFromServer) {
         hasSyncedFromServer = true;
         window.dispatchEvent(new CustomEvent("db-init-complete"));
       }
     }, (err) => {
-      console.error("Firebase sync error", err);
-      // Fallback to local offline mode to avoid getting stuck forever
-      if (!hasSyncedFromServer) {
+      console.error(`Firebase sync error on key ${key}`, err);
+      // Fallback: still mark key as completed to prevent getting stuck
+      syncedKeys.add(key);
+      if (syncedKeys.size === dbKeys.length && !hasSyncedFromServer) {
         hasSyncedFromServer = true;
         window.dispatchEvent(new CustomEvent("db-init-complete"));
       }
     });
-  } catch (error) {
-    console.error("Failed to connect to Firebase:", error);
-    if (!hasSyncedFromServer) {
-      hasSyncedFromServer = true;
-      window.dispatchEvent(new CustomEvent("db-init-complete"));
-    }
-  }
+  });
 }
 
-// Keep a persistent background polling loop
+// Sync immediately on script load
 if (typeof window !== "undefined") {
-  // Sync immediately on script load
   syncFromServer();
 }
 
@@ -180,22 +200,26 @@ export const getDB = (): DatabaseSchema => {
 // Publisher helper to save and dispatch updates to express backend
 export const setDB = (data: DatabaseSchema) => {
   cachedDB = data;
-  lastHash = computeHash(data);
   if (typeof window !== 'undefined') {
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
     window.dispatchEvent(new CustomEvent("db-update", { detail: cachedDB }));
   }
 
   // Save to Firebase ONLY if initial sync has completed
-  if (typeof window !== 'undefined') {
-    if (hasSyncedFromServer) {
-      const docRef = doc(firestoreDb, "db", "state");
-      setDoc(docRef, data).catch((err) => {
-        console.error("Failed to save to Firebase:", err);
-      });
-    } else {
-      console.warn("setDB buffered locally; Firebase sync is still in progress.");
-    }
+  if (typeof window !== 'undefined' && hasSyncedFromServer) {
+    dbKeys.forEach((key) => {
+      const currentVal = data[key];
+      const newHash = computeHash(currentVal);
+      
+      // Save only slices that actually changed compared to what we last tracked
+      if (newHash !== lastHashes[key]) {
+        lastHashes[key] = newHash;
+        const docRef = doc(firestoreDb, "db", key);
+        setDoc(docRef, { data: currentVal }).catch((err) => {
+          console.error(`Failed to save key ${key} to Firebase:`, err);
+        });
+      }
+    });
   }
 };
 
@@ -257,7 +281,7 @@ export const addLog = (user_id: string, aktivitas: string, lokasi?: string) => {
     lokasi
   };
   db.log_aktivitas.unshift(log);
-  if (db.log_aktivitas.length > 100) {
+  if (db.log_aktivitas.length > 10) {
     db.log_aktivitas.pop();
   }
   setDB(db);

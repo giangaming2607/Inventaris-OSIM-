@@ -1,12 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { getDB, setDB, useDB } from '../lib/storage';
-import { ImagePlus, Save } from 'lucide-react';
+import { ImagePlus, Save, ArrowLeft } from 'lucide-react';
 import { Button } from '../components/ui/Button';
 import { toast } from 'sonner';
 import { triggerResultPopup } from '../components/ui/ResultPopup';
 import { compressImage } from '../lib/utils';
 
-export function Settings() {
+interface SettingsProps {
+  onBack?: () => void;
+}
+
+export function Settings({ onBack }: SettingsProps) {
   const dbState = useDB();
   const [logo, setLogo] = useState<string | null>(null);
   const [loginTitle, setLoginTitle] = useState('OSIS Inventory');
@@ -32,6 +36,12 @@ export function Settings() {
           db.settings = { ...db.settings, logo: base64String };
           setDB(db);
           triggerResultPopup('success', 'Logo Disimpan', 'Logo aplikasi berhasil diperbarui!', 1000);
+          
+          if (onBack) {
+            setTimeout(() => {
+              onBack();
+            }, 1200);
+          }
         })
         .catch((error) => {
           console.error("Failed to compress logo image", error);
@@ -49,13 +59,27 @@ export function Settings() {
     };
     setDB(db);
     triggerResultPopup('success', 'Pengaturan Disimpan', 'Teks pengaturan berhasil disimpan!', 1000);
+    
+    if (onBack) {
+      setTimeout(() => {
+        onBack();
+      }, 1200);
+    }
   };
 
   return (
     <div className="space-y-6 max-w-4xl">
-      <div>
-        <h1 className="text-2xl font-bold text-white tracking-tight">Pengaturan Sistem</h1>
-        <p className="text-sm text-neutral-400 mt-1">Kelola konfigurasi aplikasi dan tampilan</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight">Pengaturan Sistem</h1>
+          <p className="text-sm text-neutral-400 mt-1">Kelola konfigurasi aplikasi dan tampilan</p>
+        </div>
+        {onBack && (
+          <Button onClick={onBack} variant="outline" className="flex items-center gap-2 self-start font-medium border-neutral-800 text-neutral-300 hover:text-white">
+            <ArrowLeft className="w-4 h-4" />
+            Kembali ke Beranda
+          </Button>
+        )}
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
@@ -149,11 +173,16 @@ export function Settings() {
                 placeholder="Masuk ke akun Anda"
               />
             </div>
-            <div className="pt-2">
+            <div className="pt-2 flex gap-3">
               <Button onClick={handleSaveText} variant="primary">
                 <Save className="w-4 h-4 mr-2" />
                 Simpan Perubahan
               </Button>
+              {onBack && (
+                <Button onClick={onBack} variant="outline" className="border-neutral-850 bg-transparent text-neutral-400">
+                  Batalkan
+                </Button>
+              )}
             </div>
           </div>
         </div>

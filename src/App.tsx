@@ -147,8 +147,8 @@ export default function App() {
       case 'history': return <Returns currentUser={activeUser} initialTab="history" />;
       case 'users': return activeUser.role === 'Admin' ? <Users /> : <Borrowing currentUser={activeUser} />;
       case 'reports': return activeUser.role === 'Admin' ? <Reports /> : <Borrowing currentUser={activeUser} />;
-      case 'settings': return activeUser.role === 'Admin' ? <Settings /> : <Borrowing currentUser={activeUser} />;
-      case 'ganti-ui': return activeUser.role === 'Admin' ? <GantiUI /> : <Borrowing currentUser={activeUser} />;
+      case 'settings': return activeUser.role === 'Admin' ? <Settings onBack={() => setCurrentView('dashboard')} /> : <Borrowing currentUser={activeUser} />;
+      case 'ganti-ui': return activeUser.role === 'Admin' ? <GantiUI onBack={() => setCurrentView('dashboard')} /> : <Borrowing currentUser={activeUser} />;
       default: return <Borrowing currentUser={activeUser} />;
     }
   };
