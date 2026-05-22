@@ -69,35 +69,47 @@ export function Inventory({ currentUser }: { currentUser: User }) {
   const handleCloseModal = () => setIsModalOpen(false);
 
   const handleSave = () => {
-    const db = getDB();
-    if (editingItem) {
-      const diff = formData.jumlah_total - editingItem.jumlah_total;
-      db.inventaris = db.inventaris.map(i => 
-        i.barang_id === editingItem.barang_id 
-          ? { 
-              ...i, 
-              ...formData, 
-              jumlah_tersedia: Math.max(0, i.jumlah_tersedia + diff) 
-            } 
-          : i
-      );
-      addLog(currentUser.user_id, `Mengubah data barang: ${formData.nama_barang}`);
-      triggerResultPopup('success', 'Berhasil Disimpan', 'Data barang berhasil diubah!', 1000);
-    } else {
-      const newItem: Inventaris = {
-        barang_id: uuidv4(),
-        kode_barang: generateKodeBarang(db.inventaris.length),
-        ...formData,
-        jumlah_tersedia: formData.jumlah_total,
-        tanggal_masuk: new Date().toISOString()
-      };
-      db.inventaris.push(newItem);
-      addLog(currentUser.user_id, `Menambahkan barang baru: ${formData.nama_barang}`);
-      triggerResultPopup('success', 'Berhasil Ditambahkan', 'Barang baru berhasil ditambahkan!', 1000);
+    try {
+      if (!formData.nama_barang || !formData.kategori_id) {
+        toast.error("Nama barang dan Kategori harus diisi");
+        return;
+      }
+      
+      const db = getDB();
+      if (editingItem) {
+        const diff = formData.jumlah_total - editingItem.jumlah_total;
+        db.inventaris = db.inventaris.map(i => 
+          i.barang_id === editingItem.barang_id 
+            ? { 
+                ...i, 
+                ...formData, 
+                jumlah_tersedia: Math.max(0, i.jumlah_tersedia + diff) 
+              } 
+            : i
+        );
+        addLog(currentUser.user_id, `Mengubah data barang: ${formData.nama_barang}`);
+      } else {
+        const newItem: Inventaris = {
+          barang_id: uuidv4(),
+          kode_barang: generateKodeBarang(db.inventaris.length),
+          ...formData,
+          jumlah_tersedia: formData.jumlah_total,
+          tanggal_masuk: new Date().toISOString()
+        };
+        db.inventaris.push(newItem);
+        addLog(currentUser.user_id, `Menambahkan barang baru: ${formData.nama_barang}`);
+      }
+      setDB(db);
+      loadData();
+    } catch (e) {
+      console.error(e);
+      toast.error("Terjadi kesalahan saat menyimpan data");
+    } finally {
+      setIsModalOpen(false);
+      setTimeout(() => {
+        triggerResultPopup('success', editingItem ? 'Berhasil Disimpan' : 'Berhasil Ditambahkan', editingItem ? 'Data barang berhasil diubah!' : 'Barang baru berhasil ditambahkan!', 1500);
+      }, 100);
     }
-    setDB(db);
-    loadData();
-    handleCloseModal();
   };
 
   const handleDelete = (id: string, nama: string) => {

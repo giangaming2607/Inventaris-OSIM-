@@ -44,28 +44,40 @@ export function Categories() {
   const handleCloseModal = () => setIsModalOpen(false);
 
   const handleSave = () => {
-    const db = getDB();
-    if (editingCat) {
-      db.kategori = db.kategori.map(k => 
-        k.kategori_id === editingCat.kategori_id 
-          ? { ...k, nama_kategori: formData.nama, deskripsi: formData.deskripsi } 
-          : k
-      );
-      addLog('admin-1', `Mengubah kategori: ${formData.nama}`);
-      triggerResultPopup('success', 'Berhasil Diubah', 'Kategori berhasil diubah!', 1000);
-    } else {
-      const newCat: Kategori = {
-        kategori_id: uuidv4(),
-        nama_kategori: formData.nama,
-        deskripsi: formData.deskripsi
-      };
-      db.kategori.push(newCat);
-      addLog('admin-1', `Menambahkan kategori baru: ${formData.nama}`);
-      triggerResultPopup('success', 'Berhasil Ditambahkan', 'Kategori baru berhasil ditambahkan!', 1000);
+    try {
+      if (!formData.nama || !formData.deskripsi) {
+        toast.error("Semua kolom harus diisi");
+        return;
+      }
+      
+      const db = getDB();
+      if (editingCat) {
+        db.kategori = db.kategori.map(k => 
+          k.kategori_id === editingCat.kategori_id 
+            ? { ...k, nama_kategori: formData.nama, deskripsi: formData.deskripsi } 
+            : k
+        );
+        addLog('admin-1', `Mengubah kategori: ${formData.nama}`);
+      } else {
+        const newCat: Kategori = {
+          kategori_id: uuidv4(),
+          nama_kategori: formData.nama,
+          deskripsi: formData.deskripsi
+        };
+        db.kategori.push(newCat);
+        addLog('admin-1', `Menambahkan kategori baru: ${formData.nama}`);
+      }
+      setDB(db);
+      loadData();
+    } catch(e) {
+      console.error(e);
+      toast.error("Terjadi kesalahan saat menyimpan kategori");
+    } finally {
+      setIsModalOpen(false);
+      setTimeout(() => {
+        triggerResultPopup('success', editingCat ? 'Berhasil Diubah' : 'Berhasil Ditambahkan', editingCat ? 'Kategori berhasil diubah!' : 'Kategori baru berhasil ditambahkan!', 1500);
+      }, 100);
     }
-    setDB(db);
-    loadData();
-    handleCloseModal();
   };
 
   const handleDelete = (id: string, nama: string) => {

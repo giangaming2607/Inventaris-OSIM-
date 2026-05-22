@@ -45,37 +45,49 @@ export function Users() {
   const handleCloseModal = () => setIsModalOpen(false);
 
   const handleSave = () => {
-    const db = getDB();
-    if (editingUser) {
-      db.users = db.users.map(u => {
-        if (u.user_id === editingUser.user_id) {
-          const updatedUser = { ...u, nama: formData.nama, username: formData.username, role: formData.role, status: formData.status };
-          if (formData.password) {
-            updatedUser.password = formData.password;
+    try {
+      if (!formData.nama || !formData.username) {
+        toast.error("Nama dan Username harus diisi");
+        return;
+      }
+      
+      const db = getDB();
+      if (editingUser) {
+        db.users = db.users.map(u => {
+          if (u.user_id === editingUser.user_id) {
+            const updatedUser = { ...u, nama: formData.nama, username: formData.username, role: formData.role, status: formData.status };
+            if (formData.password) {
+              updatedUser.password = formData.password;
+            }
+            return updatedUser;
           }
-          return updatedUser;
-        }
-        return u;
-      });
-      addLog('admin-1', `Mengubah pengguna: ${formData.nama}`);
-      triggerResultPopup('success', 'Berhasil Diubah', 'Data pengguna berhasil diubah!', 1000);
-    } else {
-      const newUser: User = {
-        user_id: uuidv4(),
-        nama: formData.nama,
-        username: formData.username,
-        password: formData.password || 'admin123',
-        role: formData.role,
-        status: formData.status,
-        created_at: new Date().toISOString()
-      };
-      db.users.push(newUser);
-      addLog('admin-1', `Menambahkan pengguna baru: ${formData.nama}`);
-      triggerResultPopup('success', 'Berhasil Ditambahkan', 'Pengguna baru berhasil ditambahkan!', 1000);
+          return u;
+        });
+        addLog('admin-1', `Mengubah pengguna: ${formData.nama}`);
+      } else {
+        const newUser: User = {
+          user_id: uuidv4(),
+          nama: formData.nama,
+          username: formData.username,
+          password: formData.password || 'admin123',
+          role: formData.role,
+          status: formData.status,
+          created_at: new Date().toISOString()
+        };
+        db.users.push(newUser);
+        addLog('admin-1', `Menambahkan pengguna baru: ${formData.nama}`);
+      }
+      setDB(db);
+      loadData();
+    } catch(e) {
+       console.error(e);
+       toast.error("Terjadi kesalahan saat menyimpan pengguna");
+    } finally {
+      setIsModalOpen(false);
+      setTimeout(() => {
+        triggerResultPopup('success', editingUser ? 'Berhasil Diubah' : 'Berhasil Ditambahkan', editingUser ? 'Data pengguna berhasil diubah!' : 'Pengguna baru berhasil ditambahkan!', 1500);
+      }, 100);
     }
-    setDB(db);
-    loadData();
-    handleCloseModal();
   };
 
   const filteredData = users.filter(u => u.nama.toLowerCase().includes(searchTerm.toLowerCase()) || u.username.toLowerCase().includes(searchTerm.toLowerCase()));
