@@ -1,6 +1,6 @@
 import { 
   Boxes, LayoutDashboard, Tags, ClipboardList, 
-  ArrowLeftRight, Users, FileBarChart, Settings, History, Palette
+  ArrowLeftRight, Users, FileBarChart, Settings, History, Palette, RefreshCw
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { Role } from '../../types';
@@ -42,33 +42,44 @@ export function Sidebar({ currentView, onNavigate, userRole }: SidebarProps) {
         )}
         <span className="truncate">{loginTitle}</span>
       </div>
-      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto w-full">
-        {visibleItems.map((item) => (
-          <button
-            key={item.id}
-            onClick={() => onNavigate(item.id)}
-            className={cn(
-              "w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors",
-              currentView === item.id 
-                ? "bg-neutral-800 text-white" 
-                : "hover:bg-neutral-800 hover:text-white"
-            )}
-          >
-            <item.icon className={cn("w-5 h-5 mr-3 opacity-70", currentView === item.id ? "text-white" : "")} />
-            {item.label}
-          </button>
-        ))}
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto w-full flex flex-col">
+        <div className="flex-1 space-y-1">
+          {visibleItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => onNavigate(item.id)}
+              className={cn(
+                "w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors",
+                currentView === item.id 
+                  ? "bg-neutral-800 text-white" 
+                  : "hover:bg-neutral-800 hover:text-white"
+              )}
+            >
+              <item.icon className={cn("w-5 h-5 mr-3 opacity-70", currentView === item.id ? "text-white" : "")} />
+              {item.label}
+            </button>
+          ))}
+        </div>
 
-        {userRole === 'Pengurus' && (
+        <div className="pt-4 mt-auto border-t border-neutral-800 space-y-2">
           <button
-            onClick={() => onNavigate('login')}
-            className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-neutral-800 mt-4 text-blue-500 border border-neutral-800"
-            style={{ color: 'var(--thm-primary)', borderColor: 'var(--thm-border)' }}
+            onClick={() => window.location.reload()}
+            className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-neutral-800 text-neutral-400"
           >
-            <Users className="w-5 h-5 mr-3 opacity-70" style={{ color: 'var(--thm-primary)' }} />
-            Masuk sebagai Admin
+            <RefreshCw className="w-5 h-5 mr-3 opacity-70" />
+            Refresh App
           </button>
-        )}
+          {userRole === 'Pengurus' && (
+            <button
+              onClick={() => onNavigate('login')}
+              className="w-full flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors hover:bg-neutral-800 text-blue-500 border border-neutral-800"
+              style={{ color: 'var(--thm-primary)', borderColor: 'var(--thm-border)' }}
+            >
+              <Users className="w-5 h-5 mr-3 opacity-70" style={{ color: 'var(--thm-primary)' }} />
+              Masuk sebagai Admin
+            </button>
+          )}
+        </div>
       </nav>
     </aside>
   );

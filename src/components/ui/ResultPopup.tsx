@@ -53,16 +53,7 @@ export function ResultPopup() {
   return (
     <AnimatePresence>
       {popup && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs pointer-events-auto">
-          {/* Backdrop animation */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-transparent"
-            onClick={() => setPopup(null)}
-          />
-
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
           {/* Card container */}
           <motion.div
             initial={{ scale: 0.9, y: 15, opacity: 0 }}
